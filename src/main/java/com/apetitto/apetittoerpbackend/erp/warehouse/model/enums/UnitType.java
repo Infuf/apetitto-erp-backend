@@ -20,7 +20,7 @@ public enum UnitType {
     METER("м.", 1000);
 
     private final String displayName;
-    private final int conversionFactor; // Коэффициент для пересчета в базовую единицу
+    private final int conversionFactor;
 
     UnitType(String displayName, int conversionFactor) {
         this.displayName = displayName;

@@ -9,15 +9,15 @@ import java.math.BigDecimal;
 @Entity
 @Getter
 @Setter
-public class StockMovementItem {
+public class TransferOrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movement_id", nullable = false)
-    private StockMovement movement;
+    @JoinColumn(name = "transfer_order_id", nullable = false)
+    private TransferOrder transferOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
@@ -26,6 +26,6 @@ public class StockMovementItem {
     @Column(nullable = false)
     private Long quantity;
 
-    @Column
-    private BigDecimal costPrice;
+    @Column(precision = 20, scale = 4, nullable = false)
+    private BigDecimal costAtTransfer;
 }

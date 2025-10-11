@@ -20,10 +20,10 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
+    @Column(unique = true)
     private String productCode;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column
@@ -33,7 +33,7 @@ public class Product {
     @Enumerated(EnumType.STRING)
     private UnitType unit;
 
-    @Column
+    @Column(unique = true)
     private String barcode;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,7 +41,7 @@ public class Product {
     private Category category;
 
     @Column(precision = 20, scale = 2)
-    private BigDecimal price;
+    private BigDecimal sellingPrice;
 
     @CreationTimestamp
     @Column(updatable = false)
