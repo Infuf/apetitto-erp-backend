@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.service;
 
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.ProductDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -20,4 +21,6 @@ public interface ProductService {
     void deleteProduct(Long id);
 
     Page<ProductDto> searchProductsByName(String name, Pageable pageable);
+
+    Product findProductEntityById(Long id);
 }

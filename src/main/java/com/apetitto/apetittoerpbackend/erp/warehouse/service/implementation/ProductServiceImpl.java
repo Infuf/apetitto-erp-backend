@@ -4,6 +4,7 @@ import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestExcept
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.ProductDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.ProductMapper;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.Product;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.ProductRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.CategoryService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.ProductService;
@@ -92,4 +93,12 @@ public class ProductServiceImpl implements ProductService {
         }
         productRepository.deleteById(id);
     }
+
+    @Override
+    @Transactional
+    public Product findProductEntityById(Long id) {
+        return productRepository.findById(id).orElseThrow(() ->
+                new ResourceNotFoundException("Product ID not found " + id));
+    }
+
 }
