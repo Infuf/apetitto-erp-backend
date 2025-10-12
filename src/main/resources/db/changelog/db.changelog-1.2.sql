@@ -48,3 +48,7 @@ ALTER TABLE product
 --changeset asilbek:17
 ALTER TABLE product
     ADD CONSTRAINT uk_product_barcode UNIQUE (barcode);
+
+--changeset asilbek:18
+ALTER TABLE warehouse
+    ADD CONSTRAINT uk_warehouse_name UNIQUE (name);
