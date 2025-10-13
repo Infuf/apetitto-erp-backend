@@ -34,7 +34,7 @@ public class StockMovement {
     private LocalDateTime movementTime;
 
     @Column(name = "created_by")
-    private Long createdBy; // Предполагаем, что здесь будет ID пользователя
+    private Long createdBy;
 
     @Column(name = "comment")
     private String comment;
