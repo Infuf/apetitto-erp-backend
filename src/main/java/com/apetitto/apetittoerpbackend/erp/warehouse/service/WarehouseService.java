@@ -23,7 +23,10 @@ public interface WarehouseService {
 
     Warehouse findWarehouseEntityById(Long id);
 
-    Page<StockItemDto> getStockByWarehouse(Long warehouseId, Pageable pageable);
+
+    Page<StockItemDto> getStockByWarehouse(Long warehouseId, String searchQuery, Long categoryId,
+                                           boolean showZeroQuantity, Pageable pageable);
+
 
     void processStockMovement(StockMovementRequestDto requestDto);
 }

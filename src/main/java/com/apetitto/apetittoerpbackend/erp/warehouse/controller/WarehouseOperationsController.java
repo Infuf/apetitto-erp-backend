@@ -17,8 +17,16 @@ public class WarehouseOperationsController implements WarehouseOperationsApi {
     private final WarehouseService warehouseService;
 
     @Override
-    public ResponseEntity<Page<StockItemDto>> getStockByWarehouse(Long warehouseId, Pageable pageable) {
-        Page<StockItemDto> stockItemsPage = warehouseService.getStockByWarehouse(warehouseId, pageable);
+    public ResponseEntity<Page<StockItemDto>> getStockByWarehouse(
+            Long warehouseId,
+            String searchQuery,
+            Long categoryId,
+            boolean showZeroQuantity,
+            Pageable pageable) {
+
+        Page<StockItemDto> stockItemsPage = warehouseService.getStockByWarehouse(
+                warehouseId, searchQuery, categoryId, showZeroQuantity, pageable);
+
         return ResponseEntity.ok(stockItemsPage);
     }
 

@@ -8,15 +8,16 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.StockItemMapper;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.WarehouseMapper;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.*;
-import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockItemRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockMovementRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.WarehouseRepository;
+import com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.StockItemSpecifications;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.ProductService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.StockItemSpecifications.*;
 
 @Service
 @RequiredArgsConstructor
@@ -88,13 +91,21 @@ public class WarehouseServiceImpl implements WarehouseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse with ID " + id + " not found"));
     }
 
+
     @Override
     @Transactional(readOnly = true)
-    public Page<StockItemDto> getStockByWarehouse(Long warehouseId, Pageable pageable) {
+    public Page<StockItemDto> getStockByWarehouse(Long warehouseId, String searchQuery, Long categoryId,
+                                                  boolean showZeroQuantity, Pageable pageable) {
         if (!warehouseRepository.existsById(warehouseId)) {
             throw new ResourceNotFoundException("Warehouse with ID " + warehouseId + " not found");
         }
-        Page<StockItem> itemsPage = stockItemRepository.findAllByWarehouseId(warehouseId, pageable);
+        var spec = byWarehouse(warehouseId)
+                .and(byCategory(categoryId))
+                .and(bySearchQuery(searchQuery))
+                .and(excludeZeroQuantity(showZeroQuantity))
+                .and(fetchProduct());
+
+        Page<StockItem> itemsPage = stockItemRepository.findAll(spec, pageable);
 
         return itemsPage.map(stockItemMapper::toDto);
     }
