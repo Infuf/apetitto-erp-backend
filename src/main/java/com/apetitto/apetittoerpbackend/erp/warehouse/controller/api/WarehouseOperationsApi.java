@@ -4,7 +4,6 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
