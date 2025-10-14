@@ -1,7 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
-import com.apetitto.apetittoerpbackend.erp.common.config.ContainerConfig;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @IntegrationTest
 @DisplayName("Интеграционные тесты для WarehouseOperationsController")
-class WarehouseOperationsControllerTest extends ContainerConfig {
+class WarehouseOperationsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

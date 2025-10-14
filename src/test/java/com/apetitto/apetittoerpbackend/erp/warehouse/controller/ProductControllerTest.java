@@ -1,7 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
-import com.apetitto.apetittoerpbackend.erp.common.config.ContainerConfig;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.ProductDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.UnitType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.ProductRepository;
@@ -21,11 +20,12 @@ import java.math.BigDecimal;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
 @DisplayName("Интеграционные тесты для ProductController")
-class ProductControllerTest extends ContainerConfig {
+class ProductControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

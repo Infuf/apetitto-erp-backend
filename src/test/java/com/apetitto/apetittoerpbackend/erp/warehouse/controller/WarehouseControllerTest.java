@@ -1,7 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
-import com.apetitto.apetittoerpbackend.erp.common.config.ContainerConfig;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.WarehouseRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @IntegrationTest
 @DisplayName("Интеграционные тесты для WarehouseController")
-class WarehouseControllerTest extends ContainerConfig {
+class WarehouseControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

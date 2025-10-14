@@ -1,7 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
-import com.apetitto.apetittoerpbackend.erp.common.config.ContainerConfig;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderRequestDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @IntegrationTest
 @DisplayName("Интеграционные тесты для TransferController")
-class TransferControllerTest extends ContainerConfig {
+class TransferControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
