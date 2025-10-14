@@ -30,9 +30,16 @@ jobs:
       - name: Build & test with Gradle (CI profile)
         run: ./gradlew build --no-daemon -Dspring.profiles.active=ci
 
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar-artifact
+          path: build/libs/
+
   publish-docker-image:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: build-and-test
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,7 +52,7 @@ jobs:
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
-          name: app-jar
+          name: app-jar-artifact
           path: build/libs/
 
       - name: Log in to the Container registry
