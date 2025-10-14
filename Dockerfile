@@ -1,6 +1,8 @@
 FROM gradle:8.5-jdk17-alpine AS build
 WORKDIR /home/gradle/src
 COPY build.gradle settings.gradle ./
+COPY gradlew ./
+COPY gradle ./gradle/
 COPY src ./src
 RUN chmod +x ./gradlew
 RUN ./gradlew build --no-daemon
