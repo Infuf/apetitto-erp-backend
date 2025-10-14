@@ -14,21 +14,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,13 +28,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build & test with Gradle
-        run: |
-          ./gradlew build --no-daemon \
-            -Dspring.datasource.url=jdbc:postgresql://postgres:5432/testdb \
-            -Dspring.datasource.username=testuser \
-            -Dspring.datasource.password=testpassword \
-            -Dspring.test.database.replace=none \
-            -Dspring.liquibase.enabled=true
+        run: ./gradlew build --no-daemon
 
       - name: Upload JAR artifact
         if: github.ref == 'refs/heads/master'
@@ -69,6 +48,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: build/libs/
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
