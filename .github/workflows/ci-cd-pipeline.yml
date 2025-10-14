@@ -14,21 +14,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: testdb
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,10 +28,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build & test with Gradle
-        env:
-          TESTCONTAINERS_JDBC_URL: jdbc:postgresql://postgres:5432/testdb
         run: ./gradlew build --no-daemon
-
       - name: Upload JAR artifact
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
