@@ -22,10 +22,12 @@ jobs:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpassword
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U testuser -d testdb"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: Checkout repository
@@ -40,13 +42,22 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
+      - name: Wait for Postgres to be ready
+        run: |
+          echo "⏳ Waiting for Postgres..."
+          for i in {1..20}; do
+            nc -z postgres 5432 && echo "✅ Postgres is up!" && break
+            echo "Waiting... ($i)"
+            sleep 3
+          done
+
+      - name: Build & test with Gradle (CI profile)
         env:
           SPRING_PROFILES_ACTIVE: ci
           SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/testdb
           SPRING_DATASOURCE_USERNAME: testuser
           SPRING_DATASOURCE_PASSWORD: testpassword
-        run: ./gradlew build --no-daemon
+        run: ./gradlew clean build --no-daemon
 
       - name: Upload JAR artifact
         if: github.ref == 'refs/heads/master'
@@ -62,6 +73,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
