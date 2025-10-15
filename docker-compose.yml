@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: apetitto-erp-postgres
+    environment:
+      POSTGRES_DB: apetitto_erp_db
+      POSTGRES_USER: apetitto_user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  backend:
+    image: ghcr.io/infuf/apetitto-erp-backend:master
+
+    container_name: apetitto-erp-backend
+    pull_policy: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/apetitto_erp_db
+      - SPRING_DATASOURCE_USERNAME=apetitto_user
+      - SPRING_DATASOURCE_PASSWORD=password
+      - APP_JWT_SECRET=7ccffc598b158f6646a3100a9d6683bf045fc4cdd518f2eb397bcc69243778e15046bf2b5d2e84632b3c7ee7ad642edb387ac9f7211e7e0362ef4e4df9c7c8b5
+      - APP_JWT_EXPIRATIONMS=86400000
+    restart: always
+volumes:
+  postgres-data:
