@@ -3,21 +3,22 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.service.implementation;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.StockItemMapper;
+import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.StockMovementMapper;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.WarehouseMapper;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.*;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockItemRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockMovementRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.WarehouseRepository;
-import com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.StockItemSpecifications;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.ProductService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,24 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final StockItemMapper stockItemMapper;
     private final ProductService productService;
     private final StockMovementRepository stockMovementRepository;
+    private final StockMovementMapper stockMovementMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable) {
+        if (!warehouseRepository.existsById(warehouseId)) {
+            throw new ResourceNotFoundException("Warehouse with ID " + warehouseId + " not found");
+        }
+
+        Page<StockMovement> movementPage;
+        if (movementType != null) {
+            movementPage = stockMovementRepository.findByWarehouseIdAndMovementType(warehouseId, movementType, pageable);
+        } else {
+            movementPage = stockMovementRepository.findByWarehouseId(warehouseId, pageable);
+        }
+
+        return movementPage.map(stockMovementMapper::toDto);
+    }
 
     @Override
     @Transactional

@@ -1,7 +1,9 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller.api;
 
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,4 +29,12 @@ public interface WarehouseOperationsApi {
     @Operation(summary = "Проведение складского движения", description = "Единый эндпоинт для приемки (INBOUND), списания (OUTBOUND), перемещений и корректировок (ADJUSTMENT).")
     @PostMapping("/movements")
     ResponseEntity<Void> processStockMovement(@RequestBody StockMovementRequestDto requestDto);
+
+    @Operation(summary = "Получение истории движений на складе")
+    @GetMapping("/movements/history")
+    ResponseEntity<Page<StockMovementDto>> getMovementHistory(
+            @Parameter() @RequestParam Long warehouseId,
+            @Parameter() @RequestParam(required = false) MovementType movementType,
+            Pageable pageable
+    );
 }

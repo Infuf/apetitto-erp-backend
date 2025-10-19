@@ -2,7 +2,9 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.warehouse.controller.api.WarehouseOperationsApi;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,12 @@ public class WarehouseOperationsController implements WarehouseOperationsApi {
     public ResponseEntity<Void> processStockMovement(StockMovementRequestDto requestDto) {
         warehouseService.processStockMovement(requestDto);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Override
+    public ResponseEntity<Page<StockMovementDto>> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable) {
+        var historyPage = warehouseService.getMovementHistory(warehouseId, movementType, pageable);
+        return ResponseEntity.ok(historyPage);
     }
 
 }
