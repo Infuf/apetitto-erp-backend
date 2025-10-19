@@ -1,15 +1,20 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.service;
 
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.Warehouse;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
 public interface WarehouseService {
+
+    Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable);
+
 
     WarehouseDto createWarehouse(WarehouseDto warehouseDto);
 

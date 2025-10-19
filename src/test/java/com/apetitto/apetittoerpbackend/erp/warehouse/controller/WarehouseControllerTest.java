@@ -1,7 +1,9 @@
 package com.apetitto.apetittoerpbackend.erp.warehouse.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.WarehouseRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +15,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -156,6 +161,80 @@ class WarehouseControllerTest {
         void deleteWarehouse_whenWarehouseNotExists_shouldReturnNotFound() throws Exception {
             mockMvc.perform(delete("/api/v1/warehouses/999"))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Тесты для GET /movements/history (История движений)")
+    class GetMovementHistoryTests {
+
+        private final Long WAREHOUSE_ID = 101L;
+        private final Long PRODUCT_ID_RICE = 302L;
+        private final Long PRODUCT_ID_MILK = 303L;
+
+        @Test
+        @WithMockUser
+        void getMovementHistory_afterCreatingMovements_shouldReturnPagedHistory() throws Exception {
+
+            StockMovementRequestDto.Item riceIn = new StockMovementRequestDto.Item();
+            riceIn.setProductId(PRODUCT_ID_RICE);
+            riceIn.setQuantity(new BigDecimal("100"));
+            riceIn.setCostPrice(new BigDecimal("20000"));
+            StockMovementRequestDto inboundRequest = new StockMovementRequestDto();
+            inboundRequest.setWarehouseId(WAREHOUSE_ID);
+            inboundRequest.setMovementType(MovementType.INBOUND);
+            inboundRequest.setItems(List.of(riceIn));
+
+            mockMvc.perform(post("/api/v1/warehouse/movements")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(inboundRequest)))
+                    .andExpect(status().isCreated());
+
+            StockMovementRequestDto.Item milkOut = new StockMovementRequestDto.Item();
+            milkOut.setProductId(PRODUCT_ID_MILK);
+            milkOut.setQuantity(new BigDecimal("20"));
+            StockMovementRequestDto outboundRequest = new StockMovementRequestDto();
+            outboundRequest.setWarehouseId(WAREHOUSE_ID);
+            outboundRequest.setMovementType(MovementType.OUTBOUND);
+            outboundRequest.setItems(List.of(milkOut));
+
+            mockMvc.perform(post("/api/v1/warehouse/movements")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(outboundRequest)))
+                    .andExpect(status().isCreated());
+
+
+            mockMvc.perform(get("/api/v1/warehouse/movements/history")
+                            .param("warehouseId", String.valueOf(WAREHOUSE_ID))
+                            .param("sort", "id,asc"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements", is(2)))
+                    .andExpect(jsonPath("$.content[0].movementType", is("INBOUND")))
+                    .andExpect(jsonPath("$.content[1].movementType", is("OUTBOUND")));
+
+            mockMvc.perform(get("/api/v1/warehouse/movements/history")
+                            .param("warehouseId", String.valueOf(WAREHOUSE_ID))
+                            .param("movementType", "OUTBOUND"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements", is(1)))
+                    .andExpect(jsonPath("$.content[0].movementType", is("OUTBOUND")));
+        }
+
+        @Test
+        @WithMockUser
+        void getMovementHistory_whenNoMovementsExist_shouldReturnEmptyPage() throws Exception {
+            mockMvc.perform(get("/api/v1/warehouse/movements/history")
+                            .param("warehouseId", "103"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.totalElements", is(0)))
+                    .andExpect(jsonPath("$.content", hasSize(0)));
+        }
+
+        @Test
+        void getMovementHistory_whenAnonymous_shouldReturnUnauthorized() throws Exception {
+            mockMvc.perform(get("/api/v1/warehouse/movements/history")
+                            .param("warehouseId", String.valueOf(WAREHOUSE_ID)))
+                    .andExpect(status().isUnauthorized());
         }
     }
 }
