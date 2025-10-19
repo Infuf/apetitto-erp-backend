@@ -45,7 +45,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO stock_item (id, warehouse_id, product_id, quantity, average_cost)
 VALUES (401, 101, 301, 50, 2200.0000),
-       (402, 101, 302, 1000000, 18.0000),
+       (402, 101, 302, 1000, 18000.0000),
        (403, 101, 303, 200, 7000.0000)
 ON CONFLICT (id) DO NOTHING;
 

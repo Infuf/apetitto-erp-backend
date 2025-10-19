@@ -18,7 +18,7 @@ CREATE TABLE product
     unit         VARCHAR(255),
     barcode      VARCHAR(255),
     category_id  BIGINT       NOT NULL REFERENCES category (id),
-    price        decimal(20, 2),
+    price        decimal(20, 4),
     created_at   TIMESTAMP DEFAULT now(),
     updated_at   TIMESTAMP DEFAULT now()
 );
@@ -38,7 +38,7 @@ CREATE TABLE stock_item
     id           BIGSERIAL PRIMARY KEY,
     warehouse_id BIGINT REFERENCES warehouse (id),
     product_id   BIGINT REFERENCES product (id),
-    quantity     BIGINT,
+    quantity     DECIMAL(20, 4),
     created_at   TIMESTAMP DEFAULT now(),
     updated_at   TIMESTAMP DEFAULT now()
 );
@@ -59,5 +59,5 @@ CREATE TABLE stock_movement_item
     id          BIGSERIAL PRIMARY KEY,
     movement_id BIGINT REFERENCES stock_movement (id) NOT NULL,
     product_id  BIGINT REFERENCES product (id)        NOT NULL,
-    quantity    BIGINT                                NOT NULL
+    quantity    DECIMAL(20, 4)                        NOT NULL
 );

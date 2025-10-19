@@ -55,11 +55,10 @@ public class TransferServiceImpl implements TransferService {
         for (TransferOrderRequestDto.Item itemDto : requestDto.getItems()) {
 
             var product = productService.findProductEntityById(itemDto.getProductId());
-            long quantityInBaseUnits = product.getUnit().toBaseUnit(itemDto.getQuantity());
 
             var orderItem = new TransferOrderItem();
             orderItem.setProduct(product);
-            orderItem.setQuantity(quantityInBaseUnits);
+            orderItem.setQuantity(itemDto.getQuantity());
             orderItem.setTransferOrder(transferOrder);
             orderItem.setCostAtTransfer(BigDecimal.ZERO);
             transferOrder.getItems().add(orderItem);
@@ -107,12 +106,12 @@ public class TransferServiceImpl implements TransferService {
 
         List<StockMovementRequestDto.Item> movementItems = new ArrayList<>();
         for (TransferOrderItem orderItem : order.getItems()) {
-            BigDecimal costPerUserUnit = findAndFreezeCost(orderItem, order.getSourceWarehouse().getId());
+            BigDecimal costPerUserUnit = getCurrentAverageCost(orderItem, order.getSourceWarehouse().getId());
             orderItem.setCostAtTransfer(costPerUserUnit);
 
             StockMovementRequestDto.Item dtoItem = new StockMovementRequestDto.Item();
             dtoItem.setProductId(orderItem.getProduct().getId());
-            dtoItem.setQuantity(orderItem.getProduct().getUnit().fromBaseUnit(orderItem.getQuantity()));
+            dtoItem.setQuantity(orderItem.getQuantity());
             movementItems.add(dtoItem);
         }
         movementRequest.setItems(movementItems);
@@ -143,7 +142,7 @@ public class TransferServiceImpl implements TransferService {
         List<StockMovementRequestDto.Item> movementItems = order.getItems().stream().map(orderItem -> {
             StockMovementRequestDto.Item dtoItem = new StockMovementRequestDto.Item();
             dtoItem.setProductId(orderItem.getProduct().getId());
-            dtoItem.setQuantity(orderItem.getProduct().getUnit().fromBaseUnit(orderItem.getQuantity()));
+            dtoItem.setQuantity(orderItem.getQuantity());
 
             dtoItem.setCostPrice(orderItem.getCostAtTransfer());
             return dtoItem;
@@ -165,17 +164,16 @@ public class TransferServiceImpl implements TransferService {
                 .orElseThrow(() -> new ResourceNotFoundException("The move order with ID + id + was not found."));
     }
 
-    private BigDecimal findAndFreezeCost(TransferOrderItem orderItem, Long sourceWarehouseId) {
+    private BigDecimal getCurrentAverageCost(TransferOrderItem orderItem, Long sourceWarehouseId) {
         var stockItem = stockItemRepository.findByWarehouseIdAndProductId(sourceWarehouseId,
                         orderItem.getProduct().getId())
                 .orElseThrow(() -> new InvalidRequestException("No balance found for item '" + orderItem.getProduct()
                         .getName() + "' at the sending warehouse."));
 
-        if (stockItem.getQuantity() < orderItem.getQuantity()) {
+        if (stockItem.getQuantity().compareTo(orderItem.getQuantity()) < 0) {
             throw new InvalidRequestException("Not enough goods'" + orderItem.getProduct().getName() + "' for sending.");
         }
 
-        return stockItem.getAverageCost().multiply(BigDecimal.valueOf(orderItem.getProduct()
-                .getUnit().getConversionFactor()));
+        return stockItem.getAverageCost();
     }
 }
