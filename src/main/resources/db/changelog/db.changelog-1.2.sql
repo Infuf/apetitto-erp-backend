@@ -30,7 +30,7 @@ CREATE TABLE transfer_order_item
     id                BIGSERIAL PRIMARY KEY,
     transfer_order_id BIGINT         NOT NULL REFERENCES transfer_order (id),
     product_id        BIGINT         NOT NULL REFERENCES product (id),
-    quantity          BIGINT         NOT NULL,
+    quantity          DECIMAL(20, 4) NOT NULL,
     cost_at_transfer  DECIMAL(20, 4) NOT NULL
 );
 --changeset asilbek:14

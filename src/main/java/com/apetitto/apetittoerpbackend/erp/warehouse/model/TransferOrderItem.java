@@ -3,6 +3,7 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.objenesis.SpringObjenesis;
 
 import java.math.BigDecimal;
 
@@ -23,8 +24,8 @@ public class TransferOrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(nullable = false)
-    private Long quantity;
+    @Column(nullable = false, precision = 20, scale = 4)
+    private BigDecimal quantity;
 
     @Column(precision = 20, scale = 4, nullable = false)
     private BigDecimal costAtTransfer;

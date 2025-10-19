@@ -29,8 +29,8 @@ public class StockItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column
-    private Long quantity;
+    @Column(precision = 20, scale = 4)
+    private BigDecimal quantity;
 
     @Column(nullable = false)
     private BigDecimal averageCost;

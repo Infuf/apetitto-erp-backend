@@ -23,8 +23,8 @@ public class StockMovementItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(nullable = false)
-    private Long quantity;
+    @Column(nullable = false, precision = 20, scale = 4)
+    private BigDecimal quantity;
 
     @Column
     private BigDecimal costPrice;

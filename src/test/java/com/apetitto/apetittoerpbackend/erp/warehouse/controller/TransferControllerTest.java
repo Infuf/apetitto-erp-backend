@@ -14,8 +14,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -87,10 +86,10 @@ class TransferControllerTest {
         mockMvc.perform(get("/api/v1/warehouse/stock?warehouseId=" + DEST_WAREHOUSE_ID + "&searchQuery=Рис"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].quantity", is(100.5)))
-                .andExpect(jsonPath("$.content[0].averageCost", is(18.0000)));
+                .andExpect(jsonPath("$.content[0].averageCost", is(18000.0000)));
         mockMvc.perform(get("/api/v1/warehouse/stock?warehouseId=" + DEST_WAREHOUSE_ID + "&searchQuery=Молоко"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].quantity", is(50.0)))
+                .andExpect(jsonPath("$.content[0].quantity").value(50))
                 .andExpect(jsonPath("$.content[0].averageCost", is(7000.0000)));
     }
 

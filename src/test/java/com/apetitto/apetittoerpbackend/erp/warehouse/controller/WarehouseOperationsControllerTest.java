@@ -124,7 +124,7 @@ class WarehouseOperationsControllerTest {
             mockMvc.perform(get("/api/v1/warehouse/stock?warehouseId=" + WAREHOUSE_ID + "&searchQuery=Рис"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content[0].quantity", is(1500.0)))
-                    .andExpect(jsonPath("$.content[0].averageCost", closeTo(18.6667, 0.0001)));
+                    .andExpect(jsonPath("$.content[0].averageCost", closeTo(18666.6667, 0.0001)));
         }
 
         @Test

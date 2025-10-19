@@ -2,37 +2,20 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.model.enums;
 
 import lombok.Getter;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 @Getter
 public enum UnitType {
 
-    PIECE("шт.", 1),
+    PIECE("шт."),
 
-    GRAM("гр.", 1),
-    KILOGRAM("кг.", 1000),
+    KILOGRAM("кг."),
 
-    MILLILITER("мл.", 1),
-    LITER("л.", 1000),
+    LITER("л."),
 
-    MILLIMETER("мм.", 1),
-    METER("м.", 1000);
+    METER("м.");
 
     private final String displayName;
-    private final int conversionFactor;
 
-    UnitType(String displayName, int conversionFactor) {
+    UnitType(String displayName) {
         this.displayName = displayName;
-        this.conversionFactor = conversionFactor;
-    }
-
-    public long toBaseUnit(BigDecimal value) {
-        return value.multiply(BigDecimal.valueOf(this.conversionFactor)).longValue();
-    }
-
-    public BigDecimal fromBaseUnit(long value) {
-        return BigDecimal.valueOf(value)
-                .divide(BigDecimal.valueOf(this.conversionFactor), 4, RoundingMode.HALF_UP);
     }
 }

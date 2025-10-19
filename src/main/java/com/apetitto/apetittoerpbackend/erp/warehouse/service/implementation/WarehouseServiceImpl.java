@@ -132,19 +132,19 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         List<StockItem> outboundItems = new ArrayList<>();
         for (var itemDto : items) {
-            Product product = productService.findProductEntityById(itemDto.getProductId());
-            long quantityInBase = product.getUnit().toBaseUnit(itemDto.getQuantity());
+            var product = productService.findProductEntityById(itemDto.getProductId());
 
             StockItem stockItem = findOrCreateStockItem(movement.getWarehouse(), product);
 
-            long newQuantity = stockItem.getQuantity() - quantityInBase;
-            if (newQuantity < 0) {
+            var newQuantity = stockItem.getQuantity().subtract(itemDto.getQuantity());
+            if (newQuantity.compareTo(BigDecimal.ZERO) < 0) {
                 throw new InvalidRequestException("There are not enough items '" + product.getName() + "' in stock.");
             }
             stockItem.setQuantity(newQuantity);
             outboundItems.add(stockItem);
 
-            movement.getItems().add(createMovementItem(movement, product, quantityInBase, null));
+            movement.getItems()
+                    .add(createMovementItem(movement, product, newQuantity, null));
         }
         stockItemRepository.saveAll(outboundItems);
     }
@@ -158,15 +158,14 @@ public class WarehouseServiceImpl implements WarehouseService {
             }
 
             Product product = productService.findProductEntityById(itemDto.getProductId());
-            long quantityInBase = product.getUnit().toBaseUnit(itemDto.getQuantity());
 
             StockItem stockItem = findOrCreateStockItem(movement.getWarehouse(), product);
 
-            updateAverageCostOnInbound(stockItem, quantityInBase, itemDto.getCostPrice());
+            updateAverageCostOnInbound(stockItem, itemDto.getQuantity(), itemDto.getCostPrice());
 
-            stockItem.setQuantity(stockItem.getQuantity() + quantityInBase);
+            stockItem.setQuantity(stockItem.getQuantity().add(itemDto.getQuantity()));
             inboundItems.add(stockItem);
-            movement.getItems().add(createMovementItem(movement, product, quantityInBase, itemDto.getCostPrice()));
+            movement.getItems().add(createMovementItem(movement, product, itemDto.getQuantity(), itemDto.getCostPrice()));
         }
         stockItemRepository.saveAll(inboundItems);
     }
@@ -175,19 +174,18 @@ public class WarehouseServiceImpl implements WarehouseService {
         List<StockItem> adjustmentItems = new ArrayList<>();
         for (var itemDto : items) {
             Product product = productService.findProductEntityById(itemDto.getProductId());
-            long quantityChangeInBase = product.getUnit().toBaseUnit(itemDto.getQuantity());
 
             StockItem stockItem = findOrCreateStockItem(movement.getWarehouse(), product);
 
-            long newQuantity = stockItem.getQuantity() + quantityChangeInBase;
-            if (newQuantity < 0) {
+            var newQuantity = stockItem.getQuantity().add(itemDto.getQuantity());
+            if (newQuantity.compareTo(BigDecimal.ZERO) < 0) {
                 throw new InvalidRequestException("The total quantity of product '" + product.getName() + "' cannot be negative.");
             }
             stockItem.setQuantity(newQuantity);
 
             adjustmentItems.add(stockItem);
 
-            movement.getItems().add(createMovementItem(movement, product, quantityChangeInBase, null));
+            movement.getItems().add(createMovementItem(movement, product, itemDto.getQuantity(), null));
         }
         stockItemRepository.saveAll(adjustmentItems);
     }
@@ -207,14 +205,14 @@ public class WarehouseServiceImpl implements WarehouseService {
                     var newItem = new StockItem();
                     newItem.setProduct(product);
                     newItem.setWarehouse(warehouse);
-                    newItem.setQuantity(0L);
+                    newItem.setQuantity(BigDecimal.ZERO);
                     newItem.setAverageCost(BigDecimal.ZERO);
                     return newItem;
                 });
     }
 
     private StockMovementItem createMovementItem(StockMovement movement, Product product,
-                                                 long quantity, BigDecimal costPrice) {
+                                                 BigDecimal quantity, BigDecimal costPrice) {
         var item = new StockMovementItem();
         item.setMovement(movement);
         item.setProduct(product);
@@ -223,23 +221,21 @@ public class WarehouseServiceImpl implements WarehouseService {
         return item;
     }
 
-    private void updateAverageCostOnInbound(StockItem stockItem, long quantityChange, BigDecimal costPrice) {
+    private void updateAverageCostOnInbound(StockItem stockItem, BigDecimal quantityChange, BigDecimal costPrice) {
         var product = stockItem.getProduct();
-        long currentQuantity = stockItem.getQuantity();
+        var currentQuantity = stockItem.getQuantity();
         var currentAvgCost = stockItem.getAverageCost();
 
-        var costPerBaseUnit = costPrice.divide(BigDecimal.valueOf(product.getUnit().getConversionFactor()),
-                4, RoundingMode.HALF_UP);
 
-        var currentTotalCost = currentAvgCost.multiply(BigDecimal.valueOf(currentQuantity));
-        var inboundTotalCost = costPerBaseUnit.multiply(BigDecimal.valueOf(quantityChange));
+        var currentTotalCost = currentAvgCost.multiply(currentQuantity);
+        var inboundTotalCost = costPrice.multiply(quantityChange);
 
-        long newTotalQuantity = currentQuantity + quantityChange;
-        if (newTotalQuantity == 0) {
+        var newTotalQuantity = currentQuantity.add(quantityChange);
+        if (newTotalQuantity.compareTo(BigDecimal.ZERO) == 0) {
             stockItem.setAverageCost(BigDecimal.ZERO);
         } else {
             BigDecimal newTotalCost = currentTotalCost.add(inboundTotalCost);
-            BigDecimal newAverageCost = newTotalCost.divide(BigDecimal.valueOf(newTotalQuantity),
+            BigDecimal newAverageCost = newTotalCost.divide(newTotalQuantity,
                     4, RoundingMode.HALF_UP);
             stockItem.setAverageCost(newAverageCost);
         }
