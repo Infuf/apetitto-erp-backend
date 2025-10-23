@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   postgres:
@@ -14,6 +12,8 @@ services:
     ports:
       - "5432:5432"
     restart: always
+    networks:
+      - apetitto-net
 
   backend:
     image: ghcr.io/infuf/apetitto-erp-backend:master
@@ -22,8 +22,6 @@ services:
     pull_policy: always
     depends_on:
       - postgres
-    ports:
-      - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/apetitto_erp_db
@@ -32,5 +30,10 @@ services:
       - APP_JWT_SECRET=7ccffc598b158f6646a3100a9d6683bf045fc4cdd518f2eb397bcc69243778e15046bf2b5d2e84632b3c7ee7ad642edb387ac9f7211e7e0362ef4e4df9c7c8b5
       - APP_JWT_EXPIRATIONMS=86400000
     restart: always
+    networks:
+      - apetitto-net
 volumes:
   postgres-data:
+networks:
+  apetitto-net:
+    external: true
