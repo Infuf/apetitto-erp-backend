@@ -24,3 +24,10 @@ CREATE TABLE user_roles
     role_id BIGINT NOT NULL REFERENCES roles (id),
     PRIMARY KEY (user_id, role_id)
 );
+--changeset asilbek:22
+INSERT INTO roles (id, name)
+VALUES (1, 'ROLE_ADMIN'),
+       (2, 'ROLE_MANAGER'),
+       (3, 'ROLE_USER')
+ON CONFLICT (id) DO NOTHING;
+SELECT setval('roles_id_seq', (SELECT COALESCE(MAX(id), 0) FROM roles), true);

@@ -1,37 +1,10 @@
---liquibase formatted sql
---changeset your_name:seed_full_realistic_data logicalFilePath:full_seed_data.sql
-
--- =================================================================
--- ПОЛНЫЙ НАБОР ТЕСТОВЫХ ДАННЫХ ДЛЯ ФРОНТЕНД-ТЕСТИРОВАНИЯ
--- =================================================================
-
--- === 1. РОЛИ И ПОЛЬЗОВАТЕЛИ ===
--- Пароль для всех: 'password' (зашифрован через BCrypt)
 INSERT INTO roles (id, name)
 VALUES (1, 'ROLE_ADMIN'),
        (2, 'ROLE_MANAGER'),
        (3, 'ROLE_USER')
 ON CONFLICT (id) DO NOTHING;
-INSERT INTO users (id, username, password, email, first_name, last_name)
-VALUES (1, 'admin', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqR2e5RzTTNpesY54Ea3o63zBs9K', 'admin@apetitto.com', 'Админ',
-        'Админов'),
-       (2, 'manager', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqR2e5RzTTNpesY54Ea3o63zBs9K', 'manager@apetitto.com',
-        'Менеджер', 'Менеджеров'),
-       (3, 'skladovshik', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqR2e5RzTTNpesY54Ea3o63zBs9K', 'sklad@apetitto.com', 'Али',
-        'Складов'),
-       (4, 'kassir', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqR2e5RzTTNpesY54Ea3o63zBs9K', 'kassa@apetitto.com', 'Вали',
-        'Кассиров')
-ON CONFLICT (id) DO NOTHING;
-INSERT INTO user_roles (user_id, role_id)
-VALUES (1, 1),
-       (1, 2),
-       (2, 2),
-       (3, 2),
-       (4, 3)
-ON CONFLICT (user_id, role_id) DO NOTHING;
 
 
--- === 2. СКЛАДЫ И КАТЕГОРИИ ===
 INSERT INTO warehouse (id, name, location, description)
 VALUES (101, 'Основной склад (Сырье)', 'г. Коканд, ул. Туркистон, 1', 'Склад для хранения сырья и материалов'),
        (102, 'Склад готовой продукции', 'г. Коканд, м-в А.Навоий, 2', 'Склад для готовой продукции перед отправкой'),
@@ -53,7 +26,6 @@ VALUES (201, 'Молочные продукты', 'Сыры, молоко, ке�
 ON CONFLICT (id) DO NOTHING;
 
 
--- === 3. ТОВАРЫ (40+ позиций) ===
 INSERT INTO product (id, product_code, name, unit, category_id, selling_price)
 VALUES (301, 'PROD-001', 'Нон (Лепешка)', 'PIECE', 202, 3000.00),
        (302, 'PROD-002', 'Буханка хлеба', 'PIECE', 202, 2500.00),
@@ -89,9 +61,6 @@ VALUES (301, 'PROD-001', 'Нон (Лепешка)', 'PIECE', 202, 3000.00),
 ON CONFLICT (id) DO NOTHING;
 
 
--- === 4. НАЧАЛЬНЫЕ ОСТАТКИ И ДВИЖЕНИЯ ===
--- Создаем движения и соответствующие им остатки.
--- Движение №1: Большое поступление на Основной склад (101)
 INSERT INTO stock_movement (id, warehouse_id, movement_type, comment)
 VALUES (1, 101, 'INBOUND', 'Первоначальное оприходование');
 INSERT INTO stock_movement_item (movement_id, product_id, quantity, cost_price)
@@ -117,7 +86,6 @@ VALUES (101, 304, 200.0, 14000.00),
        (101, 319, 1000.0, 2000.00),
        (101, 320, 150.0, 10000.00);
 
--- Движение №2: Поступление в Магазин "Центральный" (103)
 INSERT INTO stock_movement (id, warehouse_id, movement_type, comment)
 VALUES (2, 103, 'INBOUND', 'Первоначальное оприходование магазина');
 INSERT INTO stock_movement_item (movement_id, product_id, quantity, cost_price)
@@ -139,7 +107,6 @@ VALUES (103, 301, 100.0, 2200.00),
        (103, 314, 120.0, 2500.00),
        (103, 315, 90.0, 9500.00);
 
--- Движение №3: Продажа из Магазина "Центральный" (103)
 INSERT INTO stock_movement (id, warehouse_id, movement_type, comment)
 VALUES (3, 103, 'OUTBOUND', 'Продажа #1');
 INSERT INTO stock_movement_item (movement_id, product_id, quantity, cost_price)
@@ -154,7 +121,6 @@ SET quantity = quantity - 10.0
 WHERE warehouse_id = 103
   AND product_id = 315;
 
--- Движение №4: Корректировка на Основном складе (101)
 INSERT INTO stock_movement (id, warehouse_id, movement_type, comment)
 VALUES (4, 101, 'ADJUSTMENT', 'Инвентаризация: списание испорченного картофеля');
 INSERT INTO stock_movement_item (movement_id, product_id, quantity, cost_price)
@@ -165,8 +131,7 @@ WHERE warehouse_id = 101
   AND product_id = 318;
 
 
--- === 5. ПЕРЕМЕЩЕНИЯ (3 примера) ===
--- Пример 1: Отправлено и получено
+
 INSERT INTO transfer_order (id, source_warehouse_id, destination_warehouse_id, status, shipped_at, received_at)
 VALUES (1, 101, 103, 'RECEIVED', now() - interval '5 days', now() - interval '4 days');
 INSERT INTO transfer_order_item (transfer_order_id, product_id, quantity, cost_at_transfer)
@@ -179,9 +144,7 @@ VALUES (5, 325, 30.0, null),
        (6, 325, 30.0, 12000.00);
 INSERT INTO stock_item (warehouse_id, product_id, quantity, average_cost)
 VALUES (103, 325, 30.0, 12000.00);
--- Предполагаем, что на складе 101 было достаточно
 
--- Пример 2: Только отправлено (в пути)
 INSERT INTO transfer_order (id, source_warehouse_id, destination_warehouse_id, status, shipped_at)
 VALUES (2, 101, 104, 'SHIPPED', now() - interval '1 day');
 INSERT INTO transfer_order_item (transfer_order_id, product_id, quantity, cost_at_transfer)
@@ -196,15 +159,12 @@ UPDATE stock_item
 SET quantity = quantity - 100.0
 WHERE warehouse_id = 101
   AND product_id = 326;
-
--- Пример 3: Только создан (ожидает отправки)
 INSERT INTO transfer_order (id, source_warehouse_id, destination_warehouse_id, status)
 VALUES (3, 102, 103, 'PENDING');
 INSERT INTO transfer_order_item (transfer_order_id, product_id, quantity, cost_at_transfer)
 VALUES (3, 301, 5.0, 0.00);
 
 
--- === 6. ОБНОВЛЕНИЕ ПОСЛЕДОВАТЕЛЬНОСТЕЙ ===
 SELECT setval('users_id_seq', (SELECT COALESCE(MAX(id), 0) FROM users), true);
 SELECT setval('roles_id_seq', (SELECT COALESCE(MAX(id), 0) FROM roles), true);
 SELECT setval('warehouse_id_seq', (SELECT COALESCE(MAX(id), 0) FROM warehouse), true);
