@@ -38,7 +38,6 @@ jobs:
             echo "🧩 Updating image in docker-compose.yml..."
             VERSION="${{ github.event.inputs.version }}"
 
-            # Если введён digest (sha256:...), используем @
             if [[ "$VERSION" == sha256:* ]]; then
               sed -i "s|image: ghcr.io/${{ github.repository }}.*|image: ghcr.io/${{ github.repository }}@${VERSION}|" docker-compose.yml
               echo "✅ Using digest: ${VERSION}"
