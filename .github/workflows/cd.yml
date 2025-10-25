@@ -46,10 +46,10 @@ jobs:
             fi
             
             echo "🐳 Pulling new image..."
-            docker-compose pull backend
+            docker compose pull backend
             
             echo "🔁 Restarting backend service..."
-            docker-compose up -d --no-deps backend
+            docker compose up -d --no-deps backend
             
             echo "🧹 Cleaning up old images..."
             docker image prune -f --filter "until=24h"
