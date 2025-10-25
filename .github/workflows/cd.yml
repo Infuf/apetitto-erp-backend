@@ -25,7 +25,6 @@ jobs:
           script: |
             set -e
             
-            # --- 1. Определяем переменные ---
             REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             IMAGE_NAME="ghcr.io/${REPO_LOWER}"
             VERSION="${{ github.event.inputs.version }}"
