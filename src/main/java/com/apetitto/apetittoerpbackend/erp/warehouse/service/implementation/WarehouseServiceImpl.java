@@ -163,7 +163,7 @@ public class WarehouseServiceImpl implements WarehouseService {
             outboundItems.add(stockItem);
 
             movement.getItems()
-                    .add(createMovementItem(movement, product, newQuantity, null));
+                    .add(createMovementItem(movement, product, itemDto.getQuantity(), null));
         }
         stockItemRepository.saveAll(outboundItems);
     }
@@ -241,7 +241,6 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     private void updateAverageCostOnInbound(StockItem stockItem, BigDecimal quantityChange, BigDecimal costPrice) {
-        var product = stockItem.getProduct();
         var currentQuantity = stockItem.getQuantity();
         var currentAvgCost = stockItem.getAverageCost();
 
