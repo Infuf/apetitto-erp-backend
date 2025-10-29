@@ -3,7 +3,6 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.objenesis.SpringObjenesis;
 
 import java.math.BigDecimal;
 

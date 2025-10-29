@@ -4,7 +4,7 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.TransferStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -15,9 +15,9 @@ public class TransferOrderDto {
     private Long destinationWarehouseId;
     private String destinationWarehouseName;
     private TransferStatus status;
-    private LocalDateTime createdAt;
-    private LocalDateTime shippedAt;
-    private LocalDateTime receivedAt;
+    private Instant createdAt;
+    private Instant shippedAt;
+    private Instant receivedAt;
     private List<Item> items;
 
     @Data
