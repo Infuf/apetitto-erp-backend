@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +33,13 @@ public class TransferOrder {
 
     @CreationTimestamp
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column
-    private LocalDateTime shippedAt;
+    private Instant shippedAt;
 
     @Column
-    private LocalDateTime receivedAt;
+    private Instant receivedAt;
 
     @OneToMany(mappedBy = "transferOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransferOrderItem> items = new ArrayList<>();

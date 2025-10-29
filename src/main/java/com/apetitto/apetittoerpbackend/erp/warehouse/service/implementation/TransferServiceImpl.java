@@ -6,7 +6,8 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.TransferOrderMapper;
-import com.apetitto.apetittoerpbackend.erp.warehouse.model.*;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.TransferOrder;
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.TransferOrderItem;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.TransferStatus;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockItemRepository;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -119,7 +120,7 @@ public class TransferServiceImpl implements TransferService {
         warehouseService.processStockMovement(movementRequest);
 
         order.setStatus(TransferStatus.SHIPPED);
-        order.setShippedAt(LocalDateTime.now());
+        order.setShippedAt(Instant.now());
         TransferOrder updatedOrder = transferOrderRepository.save(order);
 
         return transferOrderMapper.toDto(updatedOrder);
@@ -152,7 +153,7 @@ public class TransferServiceImpl implements TransferService {
         warehouseService.processStockMovement(movementRequest);
 
         order.setStatus(TransferStatus.RECEIVED);
-        order.setReceivedAt(LocalDateTime.now());
+        order.setReceivedAt(Instant.now());
         TransferOrder updatedOrder = transferOrderRepository.save(order);
 
         return transferOrderMapper.toDto(updatedOrder);

@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class StockMovement {
 
     @CreationTimestamp
     @Column(name = "movement_time")
-    private LocalDateTime movementTime;
+    private Instant movementTime;
 
     @Column(name = "created_by")
     private Long createdBy;

@@ -3,7 +3,6 @@ package com.apetitto.apetittoerpbackend.erp.commons.handler;
 import com.apetitto.apetittoerpbackend.erp.commons.dto.ErrorResponseDto;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
-import lombok.extern.log4j.Log4j;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @RestControllerAdvice
 @Slf4j
@@ -22,7 +21,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {
 
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                LocalDateTime.now(),
+                Instant.now(),
                 HttpStatus.CONFLICT.value(),
                 ex.getMessage(),
                 request.getDescription(false)
@@ -38,7 +37,7 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException ex, WebRequest request) {
 
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                LocalDateTime.now(),
+                Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
                 request.getDescription(false)
@@ -54,7 +53,7 @@ public class GlobalExceptionHandler {
             InvalidRequestException ex, WebRequest request) {
 
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                LocalDateTime.now(),
+                Instant.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage(),
                 request.getDescription(false)
@@ -70,7 +69,7 @@ public class GlobalExceptionHandler {
             Exception ex, WebRequest request) {
 
         ErrorResponseDto errorResponse = new ErrorResponseDto(
-                LocalDateTime.now(),
+                Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Произошла внутренняя ошибка сервера. Пожалуйста, обратитесь к администратору.",
                 request.getDescription(false).replace("uri=", "")

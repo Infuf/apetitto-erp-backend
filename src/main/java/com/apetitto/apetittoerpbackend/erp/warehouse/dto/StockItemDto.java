@@ -2,6 +2,7 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.dto;
 
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.UnitType;
 import lombok.Data;
+
 import java.math.BigDecimal;
 
 @Data
