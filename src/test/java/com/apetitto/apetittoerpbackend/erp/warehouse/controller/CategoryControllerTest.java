@@ -36,7 +36,7 @@ class CategoryControllerTest {
     class GetAllCategoriesTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getAllCategories_whenAuthenticated_shouldReturnCategoryList() throws Exception {
             mockMvc.perform(get("/api/v1/categories"))
                     .andExpect(status().isOk())
@@ -58,7 +58,7 @@ class CategoryControllerTest {
     class GetCategoryByIdTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getCategoryById_whenCategoryExists_shouldReturnCategory() throws Exception {
             mockMvc.perform(get("/api/v1/categories/203"))
                     .andExpect(status().isOk())
@@ -67,7 +67,7 @@ class CategoryControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getCategoryById_whenCategoryNotExists_shouldReturnNotFound() throws Exception {
             mockMvc.perform(get("/api/v1/categories/999"))
                     .andExpect(status().isNotFound());
@@ -94,7 +94,7 @@ class CategoryControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void createCategory_whenDtoHasId_shouldReturnBadRequest() throws Exception {
             CategoryDto newCategory = new CategoryDto();
             newCategory.setId(123L);
@@ -152,7 +152,7 @@ class CategoryControllerTest {
     class SearchCategoriesTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void searchCategoriesByName_whenMatchExists_shouldReturnFilteredList() throws Exception {
             mockMvc.perform(get("/api/v1/categories/search").param("name", "Продукты"))
                     .andExpect(status().isOk())
@@ -161,7 +161,7 @@ class CategoryControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void searchCategoriesByName_whenNoMatch_shouldReturnEmptyList() throws Exception {
             mockMvc.perform(get("/api/v1/categories/search").param("name", "несуществующееимя"))
                     .andExpect(status().isOk())

@@ -42,7 +42,7 @@ class WarehouseOperationsControllerTest {
     class GetStockTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getStock_withNoFilters_shouldReturnPagedStock() throws Exception {
             mockMvc.perform(get("/api/v1/warehouse/stock")
                             .param("warehouseId", String.valueOf(WAREHOUSE_ID)))
@@ -51,7 +51,7 @@ class WarehouseOperationsControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getStock_withSearchQuery_shouldReturnFilteredStock() throws Exception {
             mockMvc.perform(get("/api/v1/warehouse/stock")
                             .param("warehouseId", String.valueOf(WAREHOUSE_ID))
@@ -62,7 +62,7 @@ class WarehouseOperationsControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getStock_withCategoryFilter_shouldReturnFilteredStock() throws Exception {
             mockMvc.perform(get("/api/v1/warehouse/stock")
                             .param("warehouseId", String.valueOf(WAREHOUSE_ID))
@@ -73,7 +73,7 @@ class WarehouseOperationsControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getStock_withShowZeroQuantity_shouldNotShowZero() throws Exception {
             StockMovementRequestDto outboundRequest = new StockMovementRequestDto();
             outboundRequest.setWarehouseId(WAREHOUSE_ID);
@@ -103,7 +103,7 @@ class WarehouseOperationsControllerTest {
     class ProcessMovementTests {
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         @DisplayName("INBOUND: Корректный расчет WAC при поступлении")
         void processInbound_shouldUpdateQuantityAndAverageCost() throws Exception {
             StockMovementRequestDto.Item riceIn = new StockMovementRequestDto.Item();
@@ -128,7 +128,7 @@ class WarehouseOperationsControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         @DisplayName("OUTBOUND: Корректное списание")
         void processOutbound_shouldDecreaseQuantity() throws Exception {
 
@@ -154,7 +154,7 @@ class WarehouseOperationsControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         @DisplayName("ADJUSTMENT: Корректировка остатков (недостача)")
         void processAdjustment_withNegativeDelta_shouldDecreaseQuantity() throws Exception {
 

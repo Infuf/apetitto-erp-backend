@@ -37,7 +37,7 @@ class TransferControllerTest {
     private static final long PRODUCT_ID_MILK = 303L;
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "WAREHOUSE_MANAGER")
     @DisplayName("Полный жизненный цикл перемещения ('Happy Path')")
     void fullTransferLifecycle_shouldWorkCorrectly() throws Exception {
 
@@ -95,7 +95,7 @@ class TransferControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "WAREHOUSE_MANAGER")
     @DisplayName("Попытка отправить заказ с недостаточным количеством товара")
     void shipTransfer_whenNotEnoughStock_shouldReturnBadRequest() throws Exception {
         TransferOrderRequestDto.Item riceItem = new TransferOrderRequestDto.Item();
@@ -120,7 +120,7 @@ class TransferControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "MANAGER")
+    @WithMockUser(roles = "WAREHOUSE_MANAGER")
     @DisplayName("Попытка выполнить действия в неправильном порядке")
     void transferActions_whenWrongStatus_shouldReturnBadRequest() throws Exception {
         TransferOrderRequestDto.Item milkItem = new TransferOrderRequestDto.Item();
