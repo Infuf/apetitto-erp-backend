@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.TransferOrderSpecification.*;
+
 @Service
 @RequiredArgsConstructor
 public class TransferServiceImpl implements TransferService {
@@ -71,15 +73,13 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<TransferOrderDto> getTransfers(TransferStatus status, Long destinationWarehouseId, Pageable pageable) {
-        Page<TransferOrder> page;
-        if (status != null && destinationWarehouseId != null) {
-            page = transferOrderRepository.findByDestinationWarehouseIdAndStatus(destinationWarehouseId, status, pageable);
-        } else if (status != null) {
-            page = transferOrderRepository.findByStatus(status, pageable);
-        } else {
-            page = transferOrderRepository.findAll(pageable);
-        }
+    public Page<TransferOrderDto> getTransfers(TransferStatus status, Long destinationWarehouseId, Instant dateFrom,
+                                               Instant dateTo, Pageable pageable) {
+        var spec = hasStatus(status)
+                .and(hasDestinationWarehouseId(destinationWarehouseId))
+                .and(createdBetween(dateFrom, dateTo));
+        Page<TransferOrder> page = transferOrderRepository.findAll(spec, pageable);
+
         return page.map(transferOrderMapper::toDto);
     }
 

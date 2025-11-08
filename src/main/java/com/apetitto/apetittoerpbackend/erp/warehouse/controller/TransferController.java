@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+
 @RestController
 @RequiredArgsConstructor
 public class TransferController implements TransferApi {
@@ -25,8 +27,10 @@ public class TransferController implements TransferApi {
     }
 
     @Override
-    public ResponseEntity<Page<TransferOrderDto>> getTransfers(TransferStatus status, Long destinationWarehouseId, Pageable pageable) {
-        Page<TransferOrderDto> transfers = transferService.getTransfers(status, destinationWarehouseId, pageable);
+    public ResponseEntity<Page<TransferOrderDto>> getTransfers(TransferStatus status, Long destinationWarehouseId,
+                                                               Instant dateFrom, Instant dateTo, Pageable pageable) {
+        Page<TransferOrderDto> transfers = transferService.getTransfers(status, destinationWarehouseId, dateFrom,
+                dateTo, pageable);
         return ResponseEntity.ok(transfers);
     }
 

@@ -9,11 +9,13 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.List;
 
 public interface WarehouseService {
 
-    Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable);
+    Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Instant dateFrom, Instant
+            dateTo, Pageable pageable);
 
 
     WarehouseDto createWarehouse(WarehouseDto warehouseDto);
