@@ -1,5 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.user.model;
 
+import com.apetitto.apetittoerpbackend.erp.warehouse.model.Warehouse;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,13 @@ public class User {
     private String email;
     private String firstName;
     private String lastName;
+
+    @Column(nullable = false)
+    private boolean enabled = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles",

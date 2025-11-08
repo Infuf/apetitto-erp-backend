@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -30,6 +31,7 @@ public interface ProductApi {
             @ApiResponse(responseCode = "400", description = "Некорректные данные", content = @Content)
     })
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto);
 
     @Operation(summary = "Получение списка всех товаров с пагинацией")
@@ -43,6 +45,7 @@ public interface ProductApi {
                     content = @Content(mediaType = "application/json"))
     })
     @GetMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<Page<ProductDto>> getAllProducts(
             @Parameter(hidden = true)
             @PageableDefault(size = 10, sort = "name") Pageable pageable
@@ -55,6 +58,7 @@ public interface ProductApi {
             @ApiResponse(responseCode = "404", description = "Товар не найден", content = @Content)
     })
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<ProductDto> getProductById(@PathVariable Long id);
 
     @Operation(summary = "Обновление существующего товара",
@@ -65,6 +69,7 @@ public interface ProductApi {
             @ApiResponse(responseCode = "404", description = "Товар не найден", content = @Content)
     })
     @PutMapping
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<ProductDto> updateProduct(@RequestBody ProductDto productDto);
 
 
@@ -74,6 +79,7 @@ public interface ProductApi {
             @ApiResponse(responseCode = "404", description = "Товар не найден", content = @Content)
     })
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<Void> deleteProduct(@PathVariable Long id);
 
 
@@ -90,6 +96,7 @@ public interface ProductApi {
                     content = @Content(mediaType = "application/json"))
     })
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
     ResponseEntity<Page<ProductDto>> searchProductsByName(
             @RequestParam String name,
             @Parameter(hidden = true)

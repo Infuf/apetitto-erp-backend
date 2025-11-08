@@ -1,10 +1,3 @@
-INSERT INTO roles (id, name)
-VALUES (1, 'ROLE_ADMIN'),
-       (2, 'ROLE_MANAGER'),
-       (3, 'ROLE_USER')
-ON CONFLICT (id) DO NOTHING;
-
-
 INSERT INTO warehouse (id, name, location, description)
 VALUES (101, 'Основной склад (Сырье)', 'г. Коканд, ул. Туркистон, 1', 'Склад для хранения сырья и материалов'),
        (102, 'Склад готовой продукции', 'г. Коканд, м-в А.Навоий, 2', 'Склад для готовой продукции перед отправкой'),

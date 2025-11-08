@@ -27,6 +27,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .authorities(user.getRoles().stream()
                         .map(Role::getName)
                         .toArray(String[]::new))
+                .disabled(!user.isEnabled())
                 .build();
     }
 }

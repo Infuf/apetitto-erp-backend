@@ -41,7 +41,7 @@ class ProductControllerTest {
     class GetAllProductsTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getAllProducts_shouldReturnPagedProducts() throws Exception {
             mockMvc.perform(get("/api/v1/products")
                             .param("page", "0")
@@ -67,7 +67,7 @@ class ProductControllerTest {
     class GetProductByIdTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getProductById_whenProductExists_shouldReturnProduct() throws Exception {
             mockMvc.perform(get("/api/v1/products/302")) // Рис "Лазер"
                     .andExpect(status().isOk())
@@ -77,7 +77,7 @@ class ProductControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getProductById_whenProductNotExists_shouldReturnNotFound() throws Exception {
             mockMvc.perform(get("/api/v1/products/999"))
                     .andExpect(status().isNotFound());
@@ -90,7 +90,7 @@ class ProductControllerTest {
     class CreateProductTests {
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void createProduct_whenValidRequest_shouldReturnCreatedProduct() throws Exception {
             ProductDto newProduct = new ProductDto();
             newProduct.setName("Новый Тестовый Продукт");
@@ -109,7 +109,7 @@ class ProductControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void createProduct_whenCategoryNotExists_shouldReturnNotFound() throws Exception {
             ProductDto newProduct = new ProductDto();
             newProduct.setName("Продукт с несуществующей категорией");
@@ -130,7 +130,7 @@ class ProductControllerTest {
     class UpdateProductTests {
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void updateProduct_whenProductExists_shouldReturnUpdatedProduct() throws Exception {
             ProductDto updatedProduct = new ProductDto();
             updatedProduct.setId(301L);
@@ -148,7 +148,7 @@ class ProductControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void updateProduct_whenChangingCategory_shouldUpdateCategory() throws Exception {
             ProductDto updatedProduct = new ProductDto();
             updatedProduct.setId(301L);
@@ -165,7 +165,7 @@ class ProductControllerTest {
         }
 
         @Test
-        @WithMockUser(roles = "MANAGER")
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void updateProduct_whenProductNotExists_shouldReturnNotFound() throws Exception {
             ProductDto updatedProduct = new ProductDto();
             updatedProduct.setId(999L);
@@ -214,7 +214,7 @@ class ProductControllerTest {
     class SearchProductsTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void searchProductsByName_whenMatchExists_shouldReturnPagedResult() throws Exception {
             mockMvc.perform(get("/api/v1/products/search")
                             .param("name", "Лепешка"))
@@ -224,12 +224,12 @@ class ProductControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void searchProductsByName_whenMultipleMatches_shouldReturnAll() throws Exception {
             mockMvc.perform(get("/api/v1/products/search")
                             .param("name", "1л"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.content", hasSize(1))) // Только "Молоко"
+                    .andExpect(jsonPath("$.content", hasSize(1)))
                     .andExpect(jsonPath("$.content[0].name", containsString("Молоко")));
         }
     }

@@ -43,7 +43,7 @@ class WarehouseControllerTest {
     class GetAllWarehousesTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getAllWarehouses_whenAuthenticated_shouldReturnWarehouseList() throws Exception {
             mockMvc.perform(get("/api/v1/warehouses"))
                     .andExpect(status().isOk())
@@ -64,7 +64,7 @@ class WarehouseControllerTest {
     class GetWarehouseByIdTests {
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getWarehouseById_whenWarehouseExists_shouldReturnWarehouse() throws Exception {
             mockMvc.perform(get("/api/v1/warehouses/101"))
                     .andExpect(status().isOk())
@@ -73,7 +73,7 @@ class WarehouseControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getWarehouseById_whenWarehouseNotExists_shouldReturnNotFound() throws Exception {
             mockMvc.perform(get("/api/v1/warehouses/999"))
                     .andExpect(status().isNotFound())
@@ -173,7 +173,7 @@ class WarehouseControllerTest {
         private final Long PRODUCT_ID_MILK = 303L;
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getMovementHistory_afterCreatingMovements_shouldReturnPagedHistory() throws Exception {
 
             StockMovementRequestDto.Item riceIn = new StockMovementRequestDto.Item();
@@ -221,7 +221,7 @@ class WarehouseControllerTest {
         }
 
         @Test
-        @WithMockUser
+        @WithMockUser(roles = "WAREHOUSE_MANAGER")
         void getMovementHistory_whenNoMovementsExist_shouldReturnEmptyPage() throws Exception {
             mockMvc.perform(get("/api/v1/warehouse/movements/history")
                             .param("warehouseId", "103"))
