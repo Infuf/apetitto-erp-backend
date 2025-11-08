@@ -49,3 +49,13 @@ VALUES (4, 'ROLE_WAREHOUSE_MANAGER'),
        (8, 'ROLE_OWNER')
 ON CONFLICT (id) DO NOTHING;
 SELECT setval('roles_id_seq', (SELECT COALESCE(MAX(id), 0) FROM roles), true);
+
+--changeset asilbek:27
+ALTER TABLE users
+    ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT false;
+
+--changeset asilbek:28
+ALTER TABLE users
+    ADD COLUMN warehouse_id BIGINT NULL;
+ALTER TABLE users
+    ADD CONSTRAINT fk_users_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouse (id);
