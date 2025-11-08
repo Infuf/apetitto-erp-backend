@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+
 @RestController
 @RequiredArgsConstructor
 public class WarehouseOperationsController implements WarehouseOperationsApi {
@@ -39,8 +41,9 @@ public class WarehouseOperationsController implements WarehouseOperationsApi {
     }
 
     @Override
-    public ResponseEntity<Page<StockMovementDto>> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable) {
-        var historyPage = warehouseService.getMovementHistory(warehouseId, movementType, pageable);
+    public ResponseEntity<Page<StockMovementDto>> getMovementHistory(Long warehouseId, MovementType movementType,
+                                                                     Instant dateFrom, Instant dateTo, Pageable pageable) {
+        var historyPage = warehouseService.getMovementHistory(warehouseId, movementType, dateFrom, dateTo, pageable);
         return ResponseEntity.ok(historyPage);
     }
 

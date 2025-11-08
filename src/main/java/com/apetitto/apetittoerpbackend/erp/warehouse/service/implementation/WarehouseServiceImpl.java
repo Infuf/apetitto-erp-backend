@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,13 +44,17 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Pageable pageable) {
+    public Page<StockMovementDto> getMovementHistory(Long warehouseId, MovementType movementType, Instant dateFrom,
+                                                     Instant dateTo, Pageable pageable) {
         if (!warehouseRepository.existsById(warehouseId)) {
             throw new ResourceNotFoundException("Warehouse with ID " + warehouseId + " not found");
         }
 
         Page<StockMovement> movementPage;
-        if (movementType != null) {
+        if (dateFrom != null || dateTo != null) {
+            movementPage = stockMovementRepository.findByWarehouseIdAndMovementTimeBetween(warehouseId, dateFrom,
+                    dateTo, pageable);
+        } else if (movementType != null) {
             movementPage = stockMovementRepository.findByWarehouseIdAndMovementType(warehouseId, movementType, pageable);
         } else {
             movementPage = stockMovementRepository.findByWarehouseId(warehouseId, pageable);

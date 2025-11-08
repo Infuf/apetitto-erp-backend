@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+
 @Tag(name = "Операции: Склад", description = "API для выполнения складских операций...")
 @RequestMapping("/api/v1/warehouse")
 public interface WarehouseOperationsApi {
@@ -39,6 +41,8 @@ public interface WarehouseOperationsApi {
     ResponseEntity<Page<StockMovementDto>> getMovementHistory(
             @Parameter() @RequestParam Long warehouseId,
             @Parameter() @RequestParam(required = false) MovementType movementType,
+            @Parameter() @RequestParam(required = false) Instant dateFrom,
+            @Parameter() @RequestParam(required = false) Instant dateTo,
             Pageable pageable
     );
 }

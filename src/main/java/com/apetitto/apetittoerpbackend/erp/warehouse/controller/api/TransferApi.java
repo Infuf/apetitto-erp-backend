@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+
 @Tag(name = "Процессы: Перемещения", description = "API для управления перемещениями товаров между складами")
 @RequestMapping("/api/v1/transfers")
 public interface TransferApi {
@@ -27,6 +29,8 @@ public interface TransferApi {
     ResponseEntity<Page<TransferOrderDto>> getTransfers(
             @Parameter(description = "Фильтр по статусу") @RequestParam(required = false) TransferStatus status,
             @Parameter(description = "Фильтр по ID склада-получателя") @RequestParam(required = false) Long destinationWarehouseId,
+            @Parameter(description = "Начало периода (формат ISO, UTC)") @RequestParam(required = false) Instant dateFrom,
+            @Parameter(description = "Конец периода (формат ISO, UTC)") @RequestParam(required = false) Instant dateTo,
             Pageable pageable
     );
 
