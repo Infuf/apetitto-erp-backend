@@ -59,3 +59,13 @@ ALTER TABLE users
     ADD COLUMN warehouse_id BIGINT NULL;
 ALTER TABLE users
     ADD CONSTRAINT fk_users_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouse (id);
+
+--changeset asilbek:29
+ALTER TABLE stock_movement
+    DROP CONSTRAINT check_movement_type;
+
+--changeset asilbek:30
+ALTER TABLE stock_movement
+    ADD CONSTRAINT check_movement_type CHECK (movement_type IN
+                                              ('INBOUND', 'OUTBOUND', 'TRANSFER_OUT', 'TRANSFER_IN', 'ADJUSTMENT',
+                                               'SELL'));

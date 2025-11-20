@@ -144,7 +144,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         switch (movementType) {
             case INBOUND, TRANSFER_IN -> processInboundOrTransfer(movement, requestDto.getItems());
-            case OUTBOUND, TRANSFER_OUT -> processOutboundOrTransfer(movement, requestDto.getItems());
+            case OUTBOUND, TRANSFER_OUT, SELL -> processOutboundOrTransfer(movement, requestDto.getItems());
             case ADJUSTMENT -> processAdjustment(movement, requestDto.getItems());
             default -> throw new InvalidRequestException("Unsupported movement type: " + movementType);
         }
