@@ -5,5 +5,6 @@ public enum MovementType {
     OUTBOUND,
     TRANSFER_OUT,
     TRANSFER_IN,
-    ADJUSTMENT
+    ADJUSTMENT,
+    SELL
 }
