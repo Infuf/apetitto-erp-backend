@@ -2,6 +2,7 @@ package com.apetitto.apetittoerpbackend.erp.finance.dto;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 import java.math.BigDecimal;
 import java.util.List;
 

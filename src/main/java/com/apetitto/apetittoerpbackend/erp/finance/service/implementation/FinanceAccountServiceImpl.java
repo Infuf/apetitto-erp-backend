@@ -17,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.apetitto.apetittoerpbackend.erp.finance.repository.specification.FinanceAccountSpecifications.*;
+import static com.apetitto.apetittoerpbackend.erp.finance.repository.specification.FinanceAccountSpecifications.hasType;
+import static com.apetitto.apetittoerpbackend.erp.finance.repository.specification.FinanceAccountSpecifications.isActive;
 
 @Service
 @RequiredArgsConstructor

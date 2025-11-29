@@ -1,8 +1,8 @@
 package com.apetitto.apetittoerpbackend.erp.finance.service;
 
-import com.apetitto.apetittoerpbackend.erp.finance.dto.AssignOwnerDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.FinanceAccountDto;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceAccountType;
+
 import java.util.List;
 
 public interface FinanceAccountService {
