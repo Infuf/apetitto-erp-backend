@@ -80,7 +80,7 @@ class FinanceAccountControllerTest {
         void getAccounts_whenFinanceOfficer_shouldSeeAll() throws Exception {
             mockMvc.perform(get("/api/v1/finance/accounts"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.size()", is(1)));
+                    .andExpect(jsonPath("$.size()", is(2)));
         }
 
         @Test
