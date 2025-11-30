@@ -1,7 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.finance.dto;
 
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -13,7 +13,7 @@ import java.util.List;
 public class TransactionCreateRequestDto {
 
     @NotNull(message = "Сумма обязательна")
-    @Min(value = 0, message = "Сумма должна быть положительной")
+    @DecimalMin(value = "0.01", message = "Сумма должно быть больше 0")
     private BigDecimal amount;
 
     @NotNull(message = "Тип операции обязателен")
