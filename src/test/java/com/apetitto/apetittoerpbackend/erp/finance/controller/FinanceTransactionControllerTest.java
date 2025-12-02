@@ -177,7 +177,7 @@ class FinanceTransactionControllerTest {
         @DisplayName("Детализация чека: Товары должны сохраняться")
         void createTransaction_withItems_shouldSaveDetails() throws Exception {
             TransactionCreateRequestDto.TransactionItemDto itemDto = new TransactionCreateRequestDto.TransactionItemDto();
-            Long PRODUCT_ID_RICE = 301l;
+            Long PRODUCT_ID_RICE = 301L;
             itemDto.setProductId(PRODUCT_ID_RICE);
             itemDto.setQuantity(new BigDecimal("10"));
             itemDto.setPriceSnapshot(new BigDecimal("20000"));
@@ -246,5 +246,69 @@ class FinanceTransactionControllerTest {
 
             transactionRepository.save(trx);
         }
+    }
+
+    @Test
+    @WithMockUser(roles = "FINANCE_OFFICER")
+    @DisplayName("PAYMENT_FROM_DLR: Оплата от дилера уменьшает его долг и увеличивает кассу")
+    void createPaymentFromDealer_shouldReduceDebtAndIncreaseCash() throws Exception {
+        FinanceAccount dealerAccount = createAccount("Дилер Алишер", FinanceAccountType.DEALER, new BigDecimal("5000000.00"));
+
+        FinanceAccount shopCashbox = createAccount("Касса Офиса", FinanceAccountType.CASHBOX, new BigDecimal("1000000.00"));
+
+        BigDecimal paymentAmount = new BigDecimal("2000000.00");
+
+        TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+        request.setAmount(paymentAmount);
+        request.setOperationType(FinanceOperationType.PAYMENT_FROM_DLR);
+        request.setFromAccountId(dealerAccount.getId());
+        request.setToAccountId(shopCashbox.getId());
+        request.setDescription("Частичное погашение долга");
+
+        mockMvc.perform(post("/api/v1/finance/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        FinanceAccount updatedDealer = accountRepository.findById(dealerAccount.getId()).orElseThrow();
+        FinanceAccount updatedCashbox = accountRepository.findById(shopCashbox.getId()).orElseThrow();
+
+        assertEquals(0, new BigDecimal("3000000.00").compareTo(updatedDealer.getBalance()),
+                "Баланс дилера (его долг нам) должен уменьшиться");
+
+        assertEquals(0, new BigDecimal("3000000.00").compareTo(updatedCashbox.getBalance()),
+                "Баланс кассы должен увеличиться");
+    }
+
+    @Test
+    @WithMockUser(roles = "FINANCE_OFFICER")
+    @DisplayName("OWNER_WITHDRAW: Вывод денег владельцем уменьшает кассу и фиксирует изъятие")
+    void createOwnerWithdraw_shouldMoveMoneyToOwnerAccount() throws Exception {
+        FinanceAccount companySafe = createAccount("Сейф Фирмы", FinanceAccountType.CASHBOX, new BigDecimal("50000000.00"));
+
+        FinanceAccount ownerPocket = createAccount("Личный кошелек Шефа", FinanceAccountType.OWNER, new BigDecimal("0.00"));
+
+        BigDecimal withdrawAmount = new BigDecimal("10000000.00");
+
+        TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+        request.setAmount(withdrawAmount);
+        request.setOperationType(FinanceOperationType.OWNER_WITHDRAW);
+        request.setFromAccountId(companySafe.getId());
+        request.setToAccountId(ownerPocket.getId());
+        request.setDescription("На отпуск");
+
+        mockMvc.perform(post("/api/v1/finance/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        FinanceAccount updatedSafe = accountRepository.findById(companySafe.getId()).orElseThrow();
+        FinanceAccount updatedOwner = accountRepository.findById(ownerPocket.getId()).orElseThrow();
+
+        assertEquals(0, new BigDecimal("40000000.00").compareTo(updatedSafe.getBalance()),
+                "Баланс сейфа должен уменьшиться");
+
+        assertEquals(0, new BigDecimal("10000000.00").compareTo(updatedOwner.getBalance()),
+                "Счет владельца должен показать сумму изъятия");
     }
 }

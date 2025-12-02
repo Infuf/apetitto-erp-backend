@@ -8,6 +8,7 @@ import com.apetitto.apetittoerpbackend.erp.finance.mapper.FinanceTransactionMapp
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceAccount;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransaction;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransactionItem;
+import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceAccountType;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceAccountRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceCategoryRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceSubCategoryRepository;
@@ -140,6 +141,17 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
                 }
                 if (to != null) {
                     throw new InvalidRequestException("Destination account must be empty for EXPENSE operations.");
+                }
+                break;
+            case OWNER_WITHDRAW:
+                if (from == null) {
+                    throw new InvalidRequestException("You must specify the cash register from which the money is taken.");
+                }
+                if (to == null) {
+                    throw new InvalidRequestException("You must specify the owner's personal account (where).");
+                }
+                if (to.getType() != FinanceAccountType.OWNER) {
+                    throw new InvalidRequestException("The recipient's account must be of type OWNER.");
                 }
                 break;
             default:
