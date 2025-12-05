@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 
@@ -98,7 +99,15 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
             fromAccount = accountRepository.findById(fromId)
                     .orElseThrow(() -> new ResourceNotFoundException("Source Account (From) not found with ID: " + fromId));
 
-            fromAccount.setBalance(fromAccount.getBalance().subtract(trx.getAmount()));
+            var newBalance = fromAccount.getBalance().subtract(trx.getAmount());
+
+            if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
+                if (fromAccount.getType() == FinanceAccountType.BANK
+                        || fromAccount.getType() == FinanceAccountType.CASHBOX) {
+                    throw new InvalidRequestException("Not money exception in account: " + fromAccount.getName());
+                }
+            }
+            fromAccount.setBalance(newBalance);
             accountRepository.save(fromAccount);
             trx.setFromAccount(fromAccount);
         }
