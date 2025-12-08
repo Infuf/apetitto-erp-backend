@@ -2,6 +2,8 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.service.implementation;
 
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
+import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
+import com.apetitto.apetittoerpbackend.erp.user.service.UserService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderRequestDto;
@@ -18,6 +20,8 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.service.WarehouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,7 @@ public class TransferServiceImpl implements TransferService {
     private final ProductService productService;
     private final StockItemRepository stockItemRepository;
     private final TransferOrderMapper transferOrderMapper;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -75,9 +80,21 @@ public class TransferServiceImpl implements TransferService {
     @Transactional(readOnly = true)
     public Page<TransferOrderDto> getTransfers(TransferStatus status, Long destinationWarehouseId, Instant dateFrom,
                                                Instant dateTo, Pageable pageable) {
-        var spec = hasStatus(status)
-                .and(hasDestinationWarehouseId(destinationWarehouseId))
-                .and(createdBetween(dateFrom, dateTo));
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        var user = userRepository.findByUsername(username).orElseThrow(()
+                -> new InvalidRequestException("The user with username: " + username + "not found"));
+
+        Specification<TransferOrder> spec;
+        if (user.getWarehouse() != null) {
+            spec = hasStatus(status)
+                    .and(hasDestinationWarehouseId(user.getWarehouse().getId()))
+                    .and(createdBetween(dateFrom, dateTo));
+        } else {
+            spec = hasStatus(status)
+                    .and(hasDestinationWarehouseId(destinationWarehouseId))
+                    .and(createdBetween(dateFrom, dateTo));
+        }
+
         Page<TransferOrder> page = transferOrderRepository.findAll(spec, pageable);
 
         return page.map(transferOrderMapper::toDto);

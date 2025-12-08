@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.commons.handler;
 
 import com.apetitto.apetittoerpbackend.erp.commons.dto.ErrorResponseDto;
+import com.apetitto.apetittoerpbackend.erp.commons.exeption.AccessDeniedException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,21 @@ public class GlobalExceptionHandler {
 
 
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDto> handleAccessDinedException(AccessDeniedException ex, WebRequest request) {
+
+        ErrorResponseDto errorResponse = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                ex.getMessage(),
+                request.getDescription(false)
+                        .replace("uri=", "")
+        );
+
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
