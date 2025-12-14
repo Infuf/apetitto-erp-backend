@@ -5,6 +5,7 @@ import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionDetailDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionResponseDto;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransaction;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransactionItem;
+import org.mapstruct.InheritConfiguration;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -50,4 +51,8 @@ public interface FinanceTransactionMapper {
     @Mapping(target = "totalAmount", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     FinanceTransactionItem toItemEntity(TransactionCreateRequestDto.TransactionItemDto dto);
+
+    @InheritConfiguration(name = "toDto")
+    @Mapping(source = "items", target = "items")
+    TransactionDetailDto toDetailDto(FinanceTransaction transaction);
 }

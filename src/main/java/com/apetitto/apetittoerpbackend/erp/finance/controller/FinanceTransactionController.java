@@ -2,6 +2,7 @@ package com.apetitto.apetittoerpbackend.erp.finance.controller;
 
 import com.apetitto.apetittoerpbackend.erp.finance.controller.api.FinanceTransactionApi;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionCreateRequestDto;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionDetailDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionResponseDto;
 import com.apetitto.apetittoerpbackend.erp.finance.service.FinanceTransactionService;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +33,10 @@ public class FinanceTransactionController implements FinanceTransactionApi {
                                                                         Pageable pageable) {
         Page<TransactionResponseDto> transactions = transactionService.getTransactions(accountId, dateFrom, dateTo, pageable);
         return ResponseEntity.ok(transactions);
+    }
+
+    @Override
+    public ResponseEntity<TransactionDetailDto> getTransactionById(Long id) {
+        return ResponseEntity.ok(transactionService.getTransactionById(id));
     }
 }

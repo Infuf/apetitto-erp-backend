@@ -2,6 +2,7 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.service.implementation;
 
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
+import com.apetitto.apetittoerpbackend.erp.finance.service.FinanceTransactionService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
@@ -28,6 +29,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType.INBOUND;
+import static com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType.OUTBOUND;
 import static com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.StockItemSpecifications.*;
 
 @Service
@@ -41,6 +44,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final ProductService productService;
     private final StockMovementRepository stockMovementRepository;
     private final StockMovementMapper stockMovementMapper;
+    private final FinanceTransactionService financeService;
 
     @Override
     @Transactional(readOnly = true)
@@ -148,8 +152,19 @@ public class WarehouseServiceImpl implements WarehouseService {
             case ADJUSTMENT -> processAdjustment(movement, requestDto.getItems());
             default -> throw new InvalidRequestException("Unsupported movement type: " + movementType);
         }
-
         stockMovementRepository.save(movement);
+        boolean isDeptOperation = (movementType == INBOUND ||
+                movementType == OUTBOUND) &&
+                requestDto.getFinanceAccountId() != null;
+
+        if (isDeptOperation) {
+            financeService.createDebtTransaction(
+                    requestDto.getFinanceAccountId(),
+                    requestDto.getItems(),
+                    requestDto.getMovementType(),
+                    requestDto.getComment()
+            );
+        }
     }
 
     private void processOutboundOrTransfer(StockMovement movement, List<StockMovementRequestDto.Item> items) {

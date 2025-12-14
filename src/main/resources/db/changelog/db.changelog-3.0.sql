@@ -100,3 +100,7 @@ ALTER TABLE finance_subcategory
 --changeset asilbek:33
 ALTER TABLE finance_account
     ADD COLUMN description TEXT;
+
+--changeset asilbek:34
+ALTER TABLE finance_account
+    ADD COLUMN discount_percentage NUMERIC(5, 2) DEFAULT 0.00;

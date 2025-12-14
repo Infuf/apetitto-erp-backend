@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.finance.controller.api;
 
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionCreateRequestDto;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionDetailDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,4 +41,10 @@ public interface FinanceTransactionApi {
 
             Pageable pageable
     );
+
+    @Operation(summary = "Получить детали операции",
+            description = "Возвращает полную информацию о транзакции, включая список товаров (детализацию).")
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER', 'OWNER')")
+    ResponseEntity<TransactionDetailDto> getTransactionById(@PathVariable Long id);
 }

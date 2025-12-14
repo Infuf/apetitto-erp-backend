@@ -35,6 +35,8 @@ public class FinanceAccount {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    private BigDecimal discountPercentage = BigDecimal.ZERO;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
