@@ -18,4 +18,5 @@ public class FinanceAccountDto {
     private Long userId;
     private String username;
     private Instant createdAt;
+    private BigDecimal discountPercentage;
 }

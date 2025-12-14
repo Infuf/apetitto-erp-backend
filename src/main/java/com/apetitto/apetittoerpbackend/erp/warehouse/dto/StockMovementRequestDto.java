@@ -12,6 +12,7 @@ public class StockMovementRequestDto {
     private MovementType movementType;
     private String comment;
     private List<Item> items;
+    private Long financeAccountId;
 
     @Data
     public static class Item {
