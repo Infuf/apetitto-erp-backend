@@ -21,6 +21,7 @@ import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,10 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus.CANCELLED;
+import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus.COMPLETED;
 import static com.apetitto.apetittoerpbackend.erp.finance.repository.specification.FinanceTransactionSpecifications.dateBetween;
 import static com.apetitto.apetittoerpbackend.erp.finance.repository.specification.FinanceTransactionSpecifications.hasAccount;
 
@@ -46,6 +50,9 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final FinanceTransactionMapper transactionMapper;
+
+    @Value("${app.finance.cancellation-window-hours}")
+    private int cancellationWindowHours;
 
     @Override
     @Transactional
@@ -114,7 +121,7 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
         FinanceTransaction trx = new FinanceTransaction();
         trx.setTransactionDate(Instant.now());
         trx.setOperationType(operationType);
-        trx.setStatus("COMPLETED");
+        trx.setStatus(COMPLETED);
         trx.setDescription("Авто-расчет: " + description);
 
         var username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -265,5 +272,49 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
             default:
                 break;
         }
+    }
+
+    @Override
+    @Transactional
+    public void cancelTransaction(Long id, String reason) {
+        var trx = transactionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + id));
+
+        if (trx.getStatus() == CANCELLED) {
+            throw new InvalidRequestException("This transaction is already CANCELLED");
+        }
+
+        var username = SecurityContextHolder.getContext().getAuthentication().getName();
+        var currentUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isSuperUser = currentUser.getRoles().stream()
+                .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
+
+        if (!isSuperUser) {
+            long hoursPassed = Duration.between(trx.getCreatedAt(), Instant.now()).toHours();
+            if (hoursPassed > cancellationWindowHours) {
+                throw new InvalidRequestException(
+                        "Cancellation period has expired (" + cancellationWindowHours + " h). Contact the Administrator.");
+            }
+        }
+
+        if (trx.getFromAccount() != null) {
+            var from = trx.getFromAccount();
+            from.setBalance(from.getBalance().add(trx.getAmount()));
+            accountRepository.save(from);
+        }
+
+        if (trx.getToAccount() != null) {
+            var to = trx.getToAccount();
+            to.setBalance(to.getBalance().subtract(trx.getAmount()));
+            accountRepository.save(to);
+        }
+
+        trx.setStatus(CANCELLED);
+        trx.setCancelledBy(currentUser);
+        trx.setCancellationReason(reason);
+
+        transactionRepository.save(trx);
     }
 }
