@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.finance.controller;
 
 import com.apetitto.apetittoerpbackend.erp.finance.controller.api.FinanceTransactionApi;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.CancellationRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionCreateRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionDetailDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionResponseDto;
@@ -38,5 +39,11 @@ public class FinanceTransactionController implements FinanceTransactionApi {
     @Override
     public ResponseEntity<TransactionDetailDto> getTransactionById(Long id) {
         return ResponseEntity.ok(transactionService.getTransactionById(id));
+    }
+
+    @Override
+    public ResponseEntity<Void> cancelTransaction(Long id, CancellationRequestDto requestDto) {
+        transactionService.cancelTransaction(id, requestDto.getReason());
+        return ResponseEntity.ok().build();
     }
 }

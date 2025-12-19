@@ -26,5 +26,5 @@ public interface FinanceTransactionService {
 
     TransactionDetailDto getTransactionById(Long id);
 
-    // void cancelTransaction(Long id);
+    void cancelTransaction(Long id, String reason);
 }

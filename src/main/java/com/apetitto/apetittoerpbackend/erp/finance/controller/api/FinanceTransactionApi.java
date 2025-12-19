@@ -1,5 +1,6 @@
 package com.apetitto.apetittoerpbackend.erp.finance.controller.api;
 
+import com.apetitto.apetittoerpbackend.erp.finance.dto.CancellationRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionCreateRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionDetailDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionResponseDto;
@@ -47,4 +48,13 @@ public interface FinanceTransactionApi {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER', 'OWNER')")
     ResponseEntity<TransactionDetailDto> getTransactionById(@PathVariable Long id);
+
+    @Operation(summary = "Отменить транзакцию (Сторно)",
+            description = "Откатывает балансы счетов. Обычные пользователи могут отменить только в течение 72 часов.")
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER', 'OWNER')")
+    ResponseEntity<Void> cancelTransaction(
+            @PathVariable Long id,
+            @RequestBody @Valid CancellationRequestDto requestDto
+    );
 }

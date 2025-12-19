@@ -1,31 +1,39 @@
 package com.apetitto.apetittoerpbackend.erp.finance.controller;
 
 import com.apetitto.apetittoerpbackend.erp.common.annotation.IntegrationTest;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.CancellationRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.TransactionCreateRequestDto;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceAccount;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceCategory;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransaction;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceAccountType;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType;
+import com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceAccountRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceCategoryRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceTransactionRepository;
 import com.apetitto.apetittoerpbackend.erp.user.model.User;
 import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType.*;
+import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus.COMPLETED;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,6 +55,11 @@ class FinanceTransactionControllerTest {
     private FinanceAccountRepository accountRepository;
     @Autowired
     private FinanceCategoryRepository categoryRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private UserRepository userRepository;
@@ -235,7 +248,7 @@ class FinanceTransactionControllerTest {
             trx.setAmount(amount);
             trx.setOperationType(type);
             trx.setTransactionDate(java.time.Instant.now());
-            trx.setStatus("COMPLETED");
+            trx.setStatus(COMPLETED);
             trx.setDescription("Test transaction");
 
             if (from != null) trx.setFromAccount(from);
@@ -310,5 +323,173 @@ class FinanceTransactionControllerTest {
 
         assertEquals(0, new BigDecimal("10000000.00").compareTo(updatedOwner.getBalance()),
                 "Счет владельца должен показать сумму изъятия");
+    }
+
+    @Nested
+    @DisplayName("Отмена транзакций (POST /{id}/cancel)")
+    class CancelTransactionTests {
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Отмена РАСХОДА должна вернуть деньги в кассу")
+        void cancelExpense_shouldRestoreSourceBalance() throws Exception {
+            var expenseAmount = new BigDecimal("100.00");
+
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(expenseAmount);
+            request.setOperationType(FinanceOperationType.EXPENSE);
+            request.setFromAccountId(cashbox.getId());
+            request.setDescription("Ошибочный расход");
+
+            String responseJson = mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString();
+
+            Long trxId = objectMapper.readTree(responseJson).get("id").asLong();
+
+            FinanceAccount cashboxAfterExpense = accountRepository.findById(cashbox.getId()).orElseThrow();
+            assertEquals(0, new BigDecimal("900.00").compareTo(cashboxAfterExpense.getBalance()));
+
+            var cancelDto = new CancellationRequestDto();
+            cancelDto.setReason("Ошибка ввода");
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isOk());
+
+            FinanceTransaction cancelledTrx = transactionRepository.findById(trxId).orElseThrow();
+            assertEquals(TransactionStatus.CANCELLED, cancelledTrx.getStatus());
+            assertEquals("Ошибка ввода", cancelledTrx.getCancellationReason());
+
+            FinanceAccount restoredCashbox = accountRepository.findById(cashbox.getId()).orElseThrow();
+            assertEquals(0, new BigDecimal("1000.00").compareTo(restoredCashbox.getBalance()),
+                    "Баланс должен восстановиться после отмены расхода");
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Отмена ПЕРЕВОДА должна откатить оба счета")
+        void cancelTransfer_shouldRollbackBothAccounts() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("5000.00"));
+            request.setOperationType(FinanceOperationType.TRANSFER);
+            request.setFromAccountId(bankAccount.getId());
+            request.setToAccountId(cashbox.getId());
+
+            String responseJson = mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn().getResponse().getContentAsString();
+            long trxId = objectMapper.readTree(responseJson).get("id").asLong();
+
+            CancellationRequestDto cancelDto = new CancellationRequestDto();
+            cancelDto.setReason("Тест отката");
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isOk());
+
+            FinanceAccount bank = accountRepository.findById(bankAccount.getId()).orElseThrow();
+            FinanceAccount cash = accountRepository.findById(cashbox.getId()).orElseThrow();
+
+            assertEquals(0, new BigDecimal("50000.00").compareTo(bank.getBalance()));
+            assertEquals(0, new BigDecimal("1000.00").compareTo(cash.getBalance()));
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Обычный сотрудник НЕ может отменить старую транзакцию (>72ч)")
+        void cancelOldTransaction_whenRegularUser_shouldFail() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("100.00"));
+            request.setOperationType(FinanceOperationType.EXPENSE);
+            request.setFromAccountId(cashbox.getId());
+
+            String responseJson = mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn().getResponse().getContentAsString();
+            Long trxId = objectMapper.readTree(responseJson).get("id").asLong();
+
+            jdbcTemplate.update("UPDATE finance_transaction SET created_at = ? WHERE id = ?",
+                    Timestamp.from(java.time.Instant.now().minus(4, ChronoUnit.DAYS)),
+                    trxId);
+
+            var cancelDto = new CancellationRequestDto();
+            cancelDto.setReason("Попытка обмана истории");
+
+            entityManager.clear();
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error", containsString("Cancellation period has expired")));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        @DisplayName("Админ МОЖЕТ отменить старую транзакцию (>72ч)")
+        void cancelOldTransaction_whenAdmin_shouldSucceed() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("100.00"));
+            request.setOperationType(FinanceOperationType.EXPENSE);
+            request.setFromAccountId(cashbox.getId());
+
+            String responseJson = mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn().getResponse().getContentAsString();
+            Long trxId = objectMapper.readTree(responseJson).get("id").asLong();
+
+            jdbcTemplate.update("UPDATE finance_transaction SET created_at = ? WHERE id = ?",
+                    Timestamp.from(java.time.Instant.now().minus(5, ChronoUnit.DAYS)),
+                    trxId);
+
+            CancellationRequestDto cancelDto = new CancellationRequestDto();
+            cancelDto.setReason("Административная корректировка");
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isOk()); // УСПЕХ
+
+            var trx = transactionRepository.findById(trxId).orElseThrow();
+            assertEquals(TransactionStatus.CANCELLED, trx.getStatus());
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Нельзя отменить транзакцию дважды")
+        void cancelTransaction_alreadyCancelled_shouldFail() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("10.00"));
+            request.setOperationType(FinanceOperationType.EXPENSE);
+            request.setFromAccountId(cashbox.getId());
+
+            String responseJson = mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andReturn().getResponse().getContentAsString();
+            long trxId = objectMapper.readTree(responseJson).get("id").asLong();
+
+            CancellationRequestDto cancelDto = new CancellationRequestDto();
+            cancelDto.setReason("Первая отмена");
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(cancelDto)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error", containsString("This transaction is already")));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.finance.model;
 
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType;
+import com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus;
 import com.apetitto.apetittoerpbackend.erp.user.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,6 +12,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus.COMPLETED;
 
 @Entity
 @Table(name = "finance_transaction")
@@ -40,7 +43,8 @@ public class FinanceTransaction {
     private FinanceOperationType operationType;
 
     @Column(nullable = false)
-    private String status = "COMPLETED";
+    @Enumerated(EnumType.STRING)
+    private TransactionStatus status = COMPLETED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
