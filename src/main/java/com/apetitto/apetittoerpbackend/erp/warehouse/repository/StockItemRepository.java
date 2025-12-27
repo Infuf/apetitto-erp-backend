@@ -5,8 +5,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -16,4 +19,13 @@ public interface StockItemRepository extends JpaRepository<StockItem, Long>, Jpa
 
     Page<StockItem> findAllByWarehouseId(Long warehouseId, Pageable pageable);
 
+    @Query("""
+                SELECT si
+                FROM StockItem si
+                JOIN FETCH si.product p
+                JOIN FETCH si.warehouse w
+                WHERE (:warehouseIds IS NULL OR w.id IN :warehouseIds)
+                AND si.quantity > 0
+            """)
+    List<StockItem> findAllActiveStockItems(@Param("warehouseIds") List<Long> warehouseIds);
 }

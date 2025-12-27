@@ -250,12 +250,27 @@ public class FinanceTransactionServiceImpl implements FinanceTransactionService 
                 break;
             case EXPENSE:
             case SUPPLIER_INVOICE:
-            case SALARY_PAYOUT:
                 if (from == null) {
                     throw new InvalidRequestException("Source account is required for EXPENSE/PAYOUT operations.");
                 }
                 if (to != null) {
                     throw new InvalidRequestException("Destination account must be empty for EXPENSE operations.");
+                }
+                break;
+            case SALARY_PAYOUT:
+                if (from == null || (from.getType() != FinanceAccountType.CASHBOX && from.getType() != FinanceAccountType.BANK)) {
+                    throw new InvalidRequestException("A real money account (Cashier/Bank) is required for payment.");
+                }
+                if (to == null || to.getType() != FinanceAccountType.EMPLOYEE) {
+                    throw new InvalidRequestException("The recipient of the payment must be the employee's account (EMPLOYEE).");
+                }
+                break;
+            case SALARY_ACCRUAL:
+                if (from == null || from.getType() != FinanceAccountType.EMPLOYEE) {
+                    throw new InvalidRequestException("To calculate payroll, you need an employee account (From) of type EMPLOYEE.");
+                }
+                if (to != null) {
+                    throw new InvalidRequestException("When calculating payroll, the ‘Where’ field must be left blank.");
                 }
                 break;
             case OWNER_WITHDRAW:
