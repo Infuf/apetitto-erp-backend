@@ -12,6 +12,7 @@ import com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceAccountRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceCategoryRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceTransactionRepository;
+import com.apetitto.apetittoerpbackend.erp.finance.service.implementation.FinanceTransactionServiceImpl;
 import com.apetitto.apetittoerpbackend.erp.user.model.User;
 import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType.*;
-import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.TransactionStatus.COMPLETED;
+import static java.time.Instant.now;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -68,6 +69,8 @@ class FinanceTransactionControllerTest {
     private FinanceAccount bankAccount;
     private FinanceAccount supplier;
     private FinanceCategory categorySales;
+    @Autowired
+    private FinanceTransactionServiceImpl financeTransactionServiceImpl;
 
     @BeforeEach
     void setUp() {
@@ -241,24 +244,6 @@ class FinanceTransactionControllerTest {
                     .andExpect(jsonPath("$.totalElements", is(1)))
                     .andExpect(jsonPath("$.content[0].amount", is(100)));
         }
-
-
-        private void createTransactionInDb(FinanceOperationType type, FinanceAccount from, FinanceAccount to, BigDecimal amount) {
-            FinanceTransaction trx = new FinanceTransaction();
-            trx.setAmount(amount);
-            trx.setOperationType(type);
-            trx.setTransactionDate(java.time.Instant.now());
-            trx.setStatus(COMPLETED);
-            trx.setDescription("Test transaction");
-
-            if (from != null) trx.setFromAccount(from);
-            if (to != null) trx.setToAccount(to);
-
-            User admin = userRepository.findById(1L).orElse(null);
-            trx.setCreatedBy(admin);
-
-            transactionRepository.save(trx);
-        }
     }
 
     @Test
@@ -323,6 +308,24 @@ class FinanceTransactionControllerTest {
 
         assertEquals(0, new BigDecimal("10000000.00").compareTo(updatedOwner.getBalance()),
                 "Счет владельца должен показать сумму изъятия");
+    }
+
+    private void createTransactionInDb(FinanceOperationType type, FinanceAccount from, FinanceAccount to, BigDecimal amount) {
+        var trx = new TransactionCreateRequestDto();
+        trx.setAmount(amount);
+        trx.setOperationType(type);
+        trx.setTransactionDate(now());
+        trx.setDescription("Test transaction");
+
+        if (from != null) {
+            trx.setFromAccountId(from.getId());
+        }
+
+        if (to != null) {
+            trx.setToAccountId(to.getId());
+        }
+
+        financeTransactionServiceImpl.createTransaction(trx);
     }
 
     @Nested
@@ -416,7 +419,7 @@ class FinanceTransactionControllerTest {
             Long trxId = objectMapper.readTree(responseJson).get("id").asLong();
 
             jdbcTemplate.update("UPDATE finance_transaction SET created_at = ? WHERE id = ?",
-                    Timestamp.from(java.time.Instant.now().minus(4, ChronoUnit.DAYS)),
+                    Timestamp.from(now().minus(4, ChronoUnit.DAYS)),
                     trxId);
 
             var cancelDto = new CancellationRequestDto();
@@ -447,7 +450,7 @@ class FinanceTransactionControllerTest {
             Long trxId = objectMapper.readTree(responseJson).get("id").asLong();
 
             jdbcTemplate.update("UPDATE finance_transaction SET created_at = ? WHERE id = ?",
-                    Timestamp.from(java.time.Instant.now().minus(5, ChronoUnit.DAYS)),
+                    Timestamp.from(now().minus(5, ChronoUnit.DAYS)),
                     trxId);
 
             CancellationRequestDto cancelDto = new CancellationRequestDto();
@@ -456,7 +459,7 @@ class FinanceTransactionControllerTest {
             mockMvc.perform(post("/api/v1/finance/transactions/" + trxId + "/cancel")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(cancelDto)))
-                    .andExpect(status().isOk()); // УСПЕХ
+                    .andExpect(status().isOk());
 
             var trx = transactionRepository.findById(trxId).orElseThrow();
             assertEquals(TransactionStatus.CANCELLED, trx.getStatus());
@@ -490,6 +493,127 @@ class FinanceTransactionControllerTest {
                             .content(objectMapper.writeValueAsString(cancelDto)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error", containsString("This transaction is already")));
+        }
+    }
+
+    @Nested
+    @DisplayName("Зарплатный проект (SALARY операций)")
+    class SalaryTests {
+
+        private FinanceAccount employeeAccount;
+        private FinanceCategory salaryCategory;
+
+        @BeforeEach
+        void setUpSalaryData() {
+            employeeAccount = createAccount("Сотрудник Али", FinanceAccountType.EMPLOYEE, BigDecimal.ZERO);
+
+            salaryCategory = new FinanceCategory();
+            salaryCategory.setName("Фонд Оплаты Труда");
+            salaryCategory.setType("EXPENSE");
+            categoryRepository.save(salaryCategory);
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Сценарий 1: Выдача Аванса (SALARY_PAYOUT)")
+        void giveAdvance_shouldIncreaseEmployeeBalance() throws Exception {
+            cashbox.setBalance(new BigDecimal("10000000.00"));
+            accountRepository.save(cashbox);
+
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("1000000.00"));
+            request.setOperationType(FinanceOperationType.SALARY_PAYOUT);
+            request.setFromAccountId(cashbox.getId());
+            request.setToAccountId(employeeAccount.getId());
+            request.setDescription("Аванс за Октябрь");
+
+            mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+
+            FinanceAccount updatedEmployee = accountRepository.findById(employeeAccount.getId()).orElseThrow();
+            FinanceAccount updatedCashbox = accountRepository.findById(cashbox.getId()).orElseThrow();
+
+            assertEquals(0, new BigDecimal("1000000.00").compareTo(updatedEmployee.getBalance()),
+                    "Баланс сотрудника должен стать положительным после аванса");
+
+            assertEquals(0, new BigDecimal("9000000.00").compareTo(updatedCashbox.getBalance()));
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Сценарий 2: Начисление Зарплаты (SALARY_ACCRUAL)")
+        void accrueSalary_shouldDecreaseEmployeeBalance() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("5000000.00"));
+            request.setOperationType(FinanceOperationType.SALARY_ACCRUAL);
+            request.setFromAccountId(employeeAccount.getId());
+            request.setToAccountId(null);
+            request.setCategoryId(salaryCategory.getId());
+            request.setDescription("ЗП за Октябрь");
+
+            mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+
+            FinanceAccount updatedEmployee = accountRepository.findById(employeeAccount.getId()).orElseThrow();
+
+            assertEquals(0, new BigDecimal("-5000000.00").compareTo(updatedEmployee.getBalance()),
+                    "Баланс сотрудника должен стать отрицательным после начисления");
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Сценарий 3: Полный цикл (Аванс -> Начисление -> Расчет)")
+        void fullSalaryCycle_shouldResultInZeroBalance() throws Exception {
+            cashbox.setBalance(new BigDecimal("10000000.00"));
+            accountRepository.save(cashbox);
+
+            createTransactionInDb(FinanceOperationType.SALARY_PAYOUT, cashbox, employeeAccount, new BigDecimal("1000000"));
+
+            createTransactionInDb(FinanceOperationType.SALARY_ACCRUAL, employeeAccount, null, new BigDecimal("5000000"));
+
+            FinanceAccount midEmployee = accountRepository.findById(employeeAccount.getId()).orElseThrow();
+            assertEquals(0, new BigDecimal("-4000000.00").compareTo(midEmployee.getBalance()));
+
+            TransactionCreateRequestDto payoutRequest = new TransactionCreateRequestDto();
+            payoutRequest.setAmount(new BigDecimal("4000000.00"));
+            payoutRequest.setOperationType(FinanceOperationType.SALARY_PAYOUT);
+            payoutRequest.setFromAccountId(cashbox.getId());
+            payoutRequest.setToAccountId(employeeAccount.getId());
+            payoutRequest.setDescription("Выплата остатка");
+
+            mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(payoutRequest)))
+                    .andExpect(status().isCreated());
+
+            FinanceAccount finalEmployee = accountRepository.findById(employeeAccount.getId()).orElseThrow();
+            FinanceAccount finalCashbox = accountRepository.findById(cashbox.getId()).orElseThrow();
+
+            assertEquals(0, BigDecimal.ZERO.compareTo(finalEmployee.getBalance()),
+                    "После полного расчета баланс сотрудника должен быть 0");
+
+            assertEquals(0, new BigDecimal("5000000.00").compareTo(finalCashbox.getBalance()));
+        }
+
+        @Test
+        @WithMockUser(roles = "FINANCE_OFFICER")
+        @DisplayName("Валидация: Нельзя начислить ЗП с кассы (ошибка типов)")
+        void accrueSalary_wrongAccountType_shouldFail() throws Exception {
+            TransactionCreateRequestDto request = new TransactionCreateRequestDto();
+            request.setAmount(new BigDecimal("100.00"));
+            request.setOperationType(FinanceOperationType.SALARY_ACCRUAL);
+            request.setFromAccountId(cashbox.getId());
+            request.setToAccountId(null);
+
+            mockMvc.perform(post("/api/v1/finance/transactions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error", containsString("(From) of type EMPLOYEE")));
         }
     }
 }

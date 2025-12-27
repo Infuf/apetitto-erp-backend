@@ -9,5 +9,6 @@ public enum FinanceOperationType {
     DEALER_INVOICE,
     PAYMENT_FROM_DLR,
     SALARY_PAYOUT,
+    SALARY_ACCRUAL,
     OWNER_WITHDRAW
 }

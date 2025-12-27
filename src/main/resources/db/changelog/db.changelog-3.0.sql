@@ -104,3 +104,6 @@ ALTER TABLE finance_account
 --changeset asilbek:34
 ALTER TABLE finance_account
     ADD COLUMN discount_percentage NUMERIC(5, 2) DEFAULT 0.00;
+--changeset asilbek:35
+ALTER TABLE product
+    ADD CONSTRAINT unq_product_name UNIQUE (name);
