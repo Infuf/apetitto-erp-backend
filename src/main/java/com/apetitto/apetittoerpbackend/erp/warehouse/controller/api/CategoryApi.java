@@ -24,17 +24,17 @@ public interface CategoryApi {
 
     @Operation(summary = "Поиск категорий по имени", description = "Возвращает список категорий, имя которых содержит поисковую строку")
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<List<CategoryDto>> searchCategoriesByName(@RequestParam("name") String name);
 
     @Operation(summary = "Получение списка всех категорий")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<List<CategoryDto>> getAllCategories();
 
     @Operation(summary = "Получение категории по ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<CategoryDto> getCategoryById(@PathVariable Long id);
 
     @Operation(summary = "Обновление существующей категории")

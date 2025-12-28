@@ -45,7 +45,7 @@ public interface ProductApi {
                     content = @Content(mediaType = "application/json"))
     })
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<Page<ProductDto>> getAllProducts(
             @Parameter(hidden = true)
             @PageableDefault(size = 10, sort = "name") Pageable pageable
@@ -58,7 +58,7 @@ public interface ProductApi {
             @ApiResponse(responseCode = "404", description = "Товар не найден", content = @Content)
     })
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<ProductDto> getProductById(@PathVariable Long id);
 
     @Operation(summary = "Обновление существующего товара",
@@ -96,7 +96,7 @@ public interface ProductApi {
                     content = @Content(mediaType = "application/json"))
     })
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<Page<ProductDto>> searchProductsByName(
             @RequestParam String name,
             @Parameter(hidden = true)

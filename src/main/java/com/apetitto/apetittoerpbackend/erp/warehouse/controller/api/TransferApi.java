@@ -36,7 +36,7 @@ public interface TransferApi {
 
     @Operation(summary = "Получение заказа на перемещение по ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER','ROLE_OWNER')")
     ResponseEntity<TransferOrderDto> getTransferById(@PathVariable Long id);
 
     @Operation(summary = "Отправка перемещения", description = "Меняет статус на SHIPPED и списывает товары со склада-отправителя.")
