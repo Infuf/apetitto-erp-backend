@@ -21,7 +21,7 @@ public interface WarehouseOperationsApi {
 
     @Operation(summary = "Получение остатков на складе с фильтрацией и пагинацией")
     @GetMapping("/stock")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER','ROLE_OWNER')")
     ResponseEntity<Page<StockItemDto>> getStockByWarehouse(
             @Parameter() @RequestParam Long warehouseId,
             @Parameter() @RequestParam(required = false) String searchQuery,
@@ -37,7 +37,7 @@ public interface WarehouseOperationsApi {
 
     @Operation(summary = "Получение истории движений на складе")
     @GetMapping("/movements/history")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<Page<StockMovementDto>> getMovementHistory(
             @Parameter() @RequestParam Long warehouseId,
             @Parameter() @RequestParam(required = false) MovementType movementType,

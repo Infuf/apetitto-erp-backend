@@ -20,12 +20,12 @@ public interface WarehouseApi {
 
     @Operation(summary = "Получение списка всех складов")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_FINANCE_OFFICER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_FINANCE_OFFICER','ROLE_OWNER')")
     ResponseEntity<List<WarehouseDto>> getAllWarehouses();
 
     @Operation(summary = "Получение склада по ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_OWNER')")
     ResponseEntity<WarehouseDto> getWarehouseById(@PathVariable Long id);
 
     @Operation(summary = "Обновление существующего склада", description = "Обновляет склад. ID должен быть указан в теле запроса.")
