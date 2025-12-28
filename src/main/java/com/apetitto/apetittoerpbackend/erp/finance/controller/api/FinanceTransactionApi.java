@@ -23,7 +23,7 @@ public interface FinanceTransactionApi {
     @Operation(summary = "Создать новую транзакцию",
             description = "Создает запись о финансовой операции (Приход, Расход, Перевод, Долг) и автоматически обновляет балансы соответствующих счетов.")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER','OWNER')")
     ResponseEntity<TransactionResponseDto> createTransaction(@Valid @RequestBody TransactionCreateRequestDto request);
 
     @Operation(summary = "Получить журнал транзакций",
