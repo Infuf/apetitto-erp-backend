@@ -25,7 +25,7 @@ public interface TransferApi {
 
     @Operation(summary = "Получение списка перемещений с фильтрацией и пагинацией")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_STORE_MANAGER','ROLE_OWNER')")
     ResponseEntity<Page<TransferOrderDto>> getTransfers(
             @Parameter(description = "Фильтр по статусу") @RequestParam(required = false) TransferStatus status,
             @Parameter(description = "Фильтр по ID склада-получателя") @RequestParam(required = false) Long destinationWarehouseId,

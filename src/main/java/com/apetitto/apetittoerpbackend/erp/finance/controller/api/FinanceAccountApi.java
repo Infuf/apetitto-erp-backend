@@ -17,7 +17,7 @@ public interface FinanceAccountApi {
 
     @Operation(summary = "Получить список счетов (Умный фильтр)")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER','WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'FINANCE_OFFICER','WAREHOUSE_MANAGER','OWNER')")
     ResponseEntity<List<FinanceAccountDto>> getAccounts(@RequestParam(required = false) FinanceAccountType type);
 
     @Operation(summary = "Получить счет по ID")
