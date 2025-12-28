@@ -20,7 +20,7 @@ public interface WarehouseApi {
 
     @Operation(summary = "Получение списка всех складов")
     @GetMapping
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_WAREHOUSE_MANAGER','ROLE_FINANCE_OFFICER')")
     ResponseEntity<List<WarehouseDto>> getAllWarehouses();
 
     @Operation(summary = "Получение склада по ID")
