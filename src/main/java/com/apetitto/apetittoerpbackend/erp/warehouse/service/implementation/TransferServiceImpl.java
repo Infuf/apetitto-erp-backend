@@ -3,7 +3,6 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.service.implementation;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
 import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
-import com.apetitto.apetittoerpbackend.erp.user.service.UserService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.TransferOrderRequestDto;
@@ -31,7 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType.INBOUND;
 import static com.apetitto.apetittoerpbackend.erp.warehouse.repository.specification.TransferOrderSpecification.*;
+import static java.lang.String.format;
+import static java.math.BigDecimal.ZERO;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +56,26 @@ public class TransferServiceImpl implements TransferService {
         var sourceWarehouse = warehouseService.findWarehouseEntityById(requestDto.getSourceWarehouseId());
         var destinationWarehouse = warehouseService.findWarehouseEntityById(requestDto.getDestinationWarehouseId());
 
+        if (Boolean.TRUE.equals(requestDto.getIsAutoInbound())) {
+            var inboundRequest = new StockMovementRequestDto();
+            inboundRequest.setWarehouseId(requestDto.getSourceWarehouseId());
+            inboundRequest.setMovementType(INBOUND);
+            inboundRequest.setComment(format("Автоматическое оприходование при трансфере c: %s -> в: %s",
+                    sourceWarehouse.getName(),
+                    destinationWarehouse.getName()));
+
+            inboundRequest.setItems(requestDto.getItems().stream()
+                    .map(item -> {
+                        var inboundItem = new StockMovementRequestDto.Item();
+                        inboundItem.setProductId(item.getProductId());
+                        inboundItem.setQuantity(item.getQuantity());
+                        inboundItem.setCostPrice(ZERO);
+                        return inboundItem;
+                    }).toList());
+            warehouseService.processStockMovement(inboundRequest);
+        }
+
+
         var transferOrder = new TransferOrder();
         transferOrder.setSourceWarehouse(sourceWarehouse);
         transferOrder.setDestinationWarehouse(destinationWarehouse);
@@ -68,7 +90,7 @@ public class TransferServiceImpl implements TransferService {
             orderItem.setProduct(product);
             orderItem.setQuantity(itemDto.getQuantity());
             orderItem.setTransferOrder(transferOrder);
-            orderItem.setCostAtTransfer(BigDecimal.ZERO);
+            orderItem.setCostAtTransfer(ZERO);
             transferOrder.getItems().add(orderItem);
         }
 
