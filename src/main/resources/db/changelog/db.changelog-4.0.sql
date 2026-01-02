@@ -23,7 +23,7 @@ CREATE TABLE employees
     position_title     VARCHAR(100),
     is_active          BOOLEAN                 DEFAULT TRUE,
     salary_base        DECIMAL(20, 2) NOT NULL DEFAULT 0,
-    salary_type        VARCHAR(50)    NOT NULL CHECK (salary_type IN ('HOURLY', 'DAILY_SHIFT')),
+    salary_type        VARCHAR(50)    NOT NULL CHECK (salary_type IN ('HOURLY', 'DAILY_SHIFT','FIXED')),
 
     days_off_per_month INT                     DEFAULT 2,
     calculation_days   INT                     DEFAULT 30,
@@ -32,7 +32,7 @@ CREATE TABLE employees
     shift_start_time   TIME WITHOUT TIME ZONE,
     shift_end_time     TIME WITHOUT TIME ZONE,
 
-    hired_at           DATE                    DEFAULT CURRENT_DATE,
+    hired_at           TIMESTAMPTZ             DEFAULT (now() AT TIME ZONE 'utc'),
     updated_at         TIMESTAMPTZ             DEFAULT (now() AT TIME ZONE 'utc')
 );
 
@@ -85,3 +85,7 @@ INSERT INTO roles (id, name)
 VALUES (9, 'ROLE_HR')
 ON CONFLICT (id) DO NOTHING;
 SELECT setval('roles_id_seq', (SELECT COALESCE(MAX(id), 0) FROM roles), true);
+
+--changeset asilbek:41
+ALTER TABLE employees
+    ADD COLUMN terminal_id BIGINT;
