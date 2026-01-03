@@ -89,3 +89,9 @@ SELECT setval('roles_id_seq', (SELECT COALESCE(MAX(id), 0) FROM roles), true);
 --changeset asilbek:41
 ALTER TABLE employees
     ADD COLUMN terminal_id BIGINT;
+
+--changeset asilbek:42
+ALTER TABLE attendance_records
+    ADD COLUMN late_minutes        INT DEFAULT 0,
+    ADD COLUMN early_leave_minutes INT DEFAULT 0,
+    ADD COLUMN overtime_minutes    INT DEFAULT 0;
