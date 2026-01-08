@@ -43,4 +43,15 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
             @Param("dateTo") Instant dateTo,
             @Param("types") List<FinanceOperationType> types
     );
+
+    @Query("SELECT t FROM FinanceTransaction t " +
+            "WHERE (t.toAccount.id = :accountId OR t.fromAccount.id = :accountId) " +
+            "AND t.transactionDate BETWEEN :from AND :to " +
+            "AND t.status = 'COMPLETED' " +
+            "ORDER BY t.transactionDate DESC")
+    List<FinanceTransaction> findEmployeeHistory(
+            @Param("accountId") Long accountId,
+            @Param("from") Instant from,
+            @Param("to") Instant to
+    );
 }

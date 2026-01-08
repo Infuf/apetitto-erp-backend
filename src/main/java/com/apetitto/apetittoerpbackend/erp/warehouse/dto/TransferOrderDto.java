@@ -25,6 +25,7 @@ public class TransferOrderDto {
         private Long productId;
         private String productName;
         private BigDecimal quantity;
+        private BigDecimal sellingPrice;
         private BigDecimal costAtTransfer;
     }
 }
