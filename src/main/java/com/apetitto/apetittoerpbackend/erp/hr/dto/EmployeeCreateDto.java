@@ -39,5 +39,6 @@ public class EmployeeCreateDto {
 
     private LocalTime shiftStartTime;
     private LocalTime shiftEndTime;
+    private Integer daysOffPerMonth;
     private Long terminalId;
 }

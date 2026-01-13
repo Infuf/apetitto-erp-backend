@@ -54,7 +54,7 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
 
         Long targetDeptId = resolveDepartmentId(departmentId);
 
-        List<Employee> employees = employeeRepository.findAllByDepartmentId(targetDeptId);
+        List<Employee> employees = employeeRepository.findAllByDepartmentIdAndIsActiveIsTrue(targetDeptId);
         if (employees.isEmpty()) {
             return AttendanceGridResponseDto.builder()
                     .fromDate(dateFrom).toDate(dateTo).rows(Collections.emptyList()).build();
@@ -230,7 +230,7 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
             if (record.getCheckOut() != null)
                 cell.setCheckOut(record.getCheckOut().atZone(ZONE_ID).format(TIME_FMT));
         } else {
-            cell.setStatus("NO_SHIFT");
+            cell.setStatus(date.isAfter(LocalDate.now(ZONE_ID)) ? "FUTURE" : "ABSENT");
             cell.setShortcomingMinutes(0);
             cell.setOvertimeMinutes(0);
         }
