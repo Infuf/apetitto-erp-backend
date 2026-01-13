@@ -46,7 +46,6 @@ public interface EmployeeMapper {
     @Mapping(target = "hiredAt", ignore = true)
     @Mapping(target = "isActive", constant = "true")
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "daysOffPerMonth", constant = "2")
     Employee toEntity(EmployeeCreateDto dto);
 
     @Mapping(target = "id", ignore = true)

@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 
+import static com.apetitto.apetittoerpbackend.erp.hr.model.enums.AttendanceStatus.ABSENT;
+import static com.apetitto.apetittoerpbackend.erp.hr.model.enums.AttendanceStatus.PRESENT;
+
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
@@ -56,11 +59,19 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (dto.getCheckIn() != null) {
             Instant checkInInstant = dto.getCheckIn().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
             record.setCheckIn(checkInInstant);
+            record.setStatus(PRESENT);
         }
 
         if (dto.getCheckOut() != null) {
             Instant checkOutInstant = dto.getCheckOut().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
             record.setCheckOut(checkOutInstant);
+            record.setStatus(PRESENT);
+        }
+
+        if (dto.getCheckIn() == null && null == dto.getCheckOut()) {
+            record.setCheckIn(null);
+            record.setCheckOut(null);
+            record.setStatus(ABSENT);
         }
 
         recalculateMetrics(record, targetEmployee);
@@ -105,43 +116,78 @@ public class AttendanceServiceImpl implements AttendanceService {
         record.setOvertimeMinutes(0);
         record.setDurationMinutes(0);
 
-        LocalTime actualCheckIn = record.getCheckIn() != null ?
-                record.getCheckIn().atZone(ZONE_ID).toLocalTime() : null;
-        LocalTime actualCheckOut = record.getCheckOut() != null ?
-                record.getCheckOut().atZone(ZONE_ID).toLocalTime() : null;
+        if (record.getCheckIn() == null || record.getCheckOut() == null) {
+            return;
+        }
+
+        LocalTime actualCheckIn =
+                record.getCheckIn().atZone(ZONE_ID).toLocalTime();
+        LocalTime actualCheckOut =
+                record.getCheckOut().atZone(ZONE_ID).toLocalTime();
 
         LocalTime shiftStart = employee.getShiftStartTime();
         LocalTime shiftEnd = employee.getShiftEndTime();
 
-        if (actualCheckIn != null && shiftStart != null) {
+        if (shiftStart == null || shiftEnd == null) {
+            return;
+        }
+
+        boolean nightShift = shiftEnd.isBefore(shiftStart);
+
+
+        long durationMinutes;
+        if (!nightShift) {
+            durationMinutes = Duration.between(actualCheckIn, actualCheckOut).toMinutes();
+        } else {
+            durationMinutes = Duration.between(
+                    actualCheckIn,
+                    actualCheckOut.isAfter(actualCheckIn)
+                            ? actualCheckOut
+                            : actualCheckOut.plusHours(24)
+            ).toMinutes();
+        }
+
+        record.setDurationMinutes((int) Math.max(durationMinutes, 0));
+
+        if (!nightShift) {
             if (actualCheckIn.isAfter(shiftStart)) {
-                long late = Duration.between(shiftStart, actualCheckIn).toMinutes();
-                record.setLateMinutes((int) late);
+                record.setLateMinutes(
+                        (int) Duration.between(shiftStart, actualCheckIn).toMinutes()
+                );
+            }
+        } else {
+            if (actualCheckIn.isAfter(shiftStart)) {
+                record.setLateMinutes(
+                        (int) Duration.between(shiftStart, actualCheckIn).toMinutes()
+                );
             }
         }
 
-        if (actualCheckOut != null && shiftEnd != null) {
+        if (!nightShift) {
             if (actualCheckOut.isBefore(shiftEnd)) {
-                long early = Duration.between(actualCheckOut, shiftEnd).toMinutes();
-                record.setEarlyLeaveMinutes((int) early);
+                record.setEarlyLeaveMinutes(
+                        (int) Duration.between(actualCheckOut, shiftEnd).toMinutes()
+                );
+            }
+        } else {
+            // ночная смена
+            if (actualCheckOut.isBefore(shiftEnd)) {
+                record.setEarlyLeaveMinutes(
+                        (int) Duration.between(actualCheckOut, shiftEnd).toMinutes()
+                );
             }
         }
 
-        if (actualCheckIn != null && actualCheckOut != null) {
-            long duration = Duration.between(actualCheckIn, actualCheckOut).toMinutes();
-            if (duration < 0) duration = 0;
+        long overtime = 0;
 
-
-            record.setDurationMinutes((int) duration);
-
-            long normMinutes = 0;
-            if (shiftStart != null && shiftEnd != null) {
-                normMinutes = Duration.between(shiftStart, shiftEnd).toMinutes();
-            }
-
-            if (duration > normMinutes && normMinutes > 0) {
-                record.setOvertimeMinutes((int) (duration - normMinutes));
-            }
+        if (actualCheckIn.isBefore(shiftStart)) {
+            overtime += Duration.between(actualCheckIn, shiftStart).toMinutes();
         }
+
+        if (actualCheckOut.isAfter(shiftEnd)) {
+            overtime += Duration.between(shiftEnd, actualCheckOut).toMinutes();
+        }
+
+        record.setOvertimeMinutes((int) Math.max(overtime, 0));
     }
 }

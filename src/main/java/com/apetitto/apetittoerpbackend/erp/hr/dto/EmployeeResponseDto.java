@@ -29,6 +29,7 @@ public class EmployeeResponseDto {
 
     private SalaryType salaryType;
     private BigDecimal salaryBase;
+    private Integer daysOffPerMonth;
     private Long terminalId;
 
     private LocalTime shiftStartTime;

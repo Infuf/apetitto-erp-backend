@@ -1,6 +1,8 @@
 package com.apetitto.apetittoerpbackend.erp.user.service.implementation;
 
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
+import com.apetitto.apetittoerpbackend.erp.hr.model.Employee;
+import com.apetitto.apetittoerpbackend.erp.hr.repository.EmployeeRepository;
 import com.apetitto.apetittoerpbackend.erp.user.dto.JwtResponseDto;
 import com.apetitto.apetittoerpbackend.erp.user.dto.LoginRequestDto;
 import com.apetitto.apetittoerpbackend.erp.user.dto.SignupRequestDto;
@@ -31,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder encoder;
+    private final EmployeeRepository employeeRepository;
     private final JwtUtils jwtUtils;
 
     @Override
@@ -51,7 +54,12 @@ public class AuthServiceImpl implements AuthService {
 
         var user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
 
-        return new JwtResponseDto(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), roles);
+        Long employeeId = employeeRepository.findByUserId(user.getId())
+                .map(Employee::getId)
+                .orElse(null);
+
+
+        return new JwtResponseDto(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), roles, employeeId);
     }
 
     @Override
