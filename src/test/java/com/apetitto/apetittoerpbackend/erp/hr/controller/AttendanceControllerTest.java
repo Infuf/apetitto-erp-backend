@@ -176,6 +176,7 @@ class AttendanceControllerTest {
             dto.setEmployeeId(regularEmployee.getId());
             dto.setDate(LocalDate.now());
             dto.setCheckIn(LocalTime.of(9, 30));
+            dto.setCheckOut(LocalTime.of(18, 0));
             userRepository.save(createUser("user", Set.of("ROLE_ADMIN")));
 
 
