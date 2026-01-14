@@ -9,7 +9,10 @@ import com.apetitto.apetittoerpbackend.erp.hr.repository.EmployeeRepository;
 import com.apetitto.apetittoerpbackend.erp.hr.repository.HrDeviceLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -28,26 +31,28 @@ public class AttendanceProcessingService {
     private final AttendanceRepository attendanceRepository;
     private final AttendanceService attendanceService;
 
+    @Autowired
+    @Lazy
+    private AttendanceProcessingService attendanceProcessingService;
+
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Tashkent");
 
-    @Transactional
     public void processLogs(List<Long> logIds) {
         List<HrDeviceLog> logs = deviceLogRepository.findAllById(logIds);
 
         for (HrDeviceLog logItem : logs) {
             try {
-                processSingleLog(logItem);
-                logItem.setIsProcessed(true);
+                attendanceProcessingService.processSingleLog(logItem);
             } catch (Exception e) {
                 log.error("Logic error processing log {}: {}", logItem.getId(), e.getMessage());
-                logItem.setErrorMessage(e.getMessage());
-                logItem.setIsProcessed(true);
+                attendanceProcessingService.updateLogStatusOnError(logItem, e);
             }
         }
         deviceLogRepository.saveAll(logs);
     }
 
-    private void processSingleLog(HrDeviceLog logItem) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processSingleLog(HrDeviceLog logItem) {
         Employee employee = employeeRepository.findByTerminalId(logItem.getUserPin())
                 .orElseThrow(() -> new RuntimeException("Сотрудник с PIN " + logItem.getUserPin() + " не найден"));
 
@@ -82,8 +87,16 @@ public class AttendanceProcessingService {
         }
 
         if (needUpdate) {
-            attendanceService.updateAttendance(updateDto);
+            attendanceService.updateAttendanceSystem(updateDto);
         }
+        logItem.setIsProcessed(true);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateLogStatusOnError(HrDeviceLog logItem, Exception error) {
+        logItem.setErrorMessage(error.getMessage());
+        logItem.setIsProcessed(true);
+        deviceLogRepository.save(logItem);
     }
 
     private LocalDate determineShiftDate(LocalDateTime eventDateTime, Employee employee) {
