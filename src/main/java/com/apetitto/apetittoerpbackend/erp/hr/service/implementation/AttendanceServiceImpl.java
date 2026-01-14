@@ -79,6 +79,51 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendanceRepository.save(record);
     }
 
+    @Override
+    @Transactional
+    public void updateAttendanceSystem(AttendanceUpdateDto dto) {
+        Employee targetEmployee = employeeRepository.findById(dto.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + dto.getEmployeeId()));
+
+        validateDate(dto.getDate());
+
+        // TODO: Проверка на закрытый период (Финансы).
+        // Если зарплата за этот месяц (или этот день) уже начислена (есть транзакция SALARY_ACCRUAL или статус PAID),
+        // то редактирование должно быть запрещено.
+        // Пример: if (payrollService.isPeriodClosed(targetEmployee.getId(), dto.getDate())) throw ...
+
+        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(targetEmployee.getId(), dto.getDate())
+                .orElse(new AttendanceRecord());
+
+        if (record.getId() == null) {
+            record.setEmployee(targetEmployee);
+            record.setDate(dto.getDate());
+            record.setStatus(AttendanceStatus.PRESENT);
+        }
+
+        if (dto.getCheckIn() != null) {
+            Instant checkInInstant = dto.getCheckIn().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
+            record.setCheckIn(checkInInstant);
+            record.setStatus(PRESENT);
+        }
+
+        if (dto.getCheckOut() != null) {
+            Instant checkOutInstant = dto.getCheckOut().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
+            record.setCheckOut(checkOutInstant);
+            record.setStatus(PRESENT);
+        }
+
+        if (dto.getCheckIn() == null && null == dto.getCheckOut()) {
+            record.setCheckIn(null);
+            record.setCheckOut(null);
+            record.setStatus(ABSENT);
+        }
+
+        recalculateMetrics(record, targetEmployee);
+
+        attendanceRepository.save(record);
+    }
+
     private void validateUserAccess(Employee targetEmployee) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
