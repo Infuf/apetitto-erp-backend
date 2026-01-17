@@ -59,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElse(null);
 
 
-        return new JwtResponseDto(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), roles, employeeId);
+        return new JwtResponseDto(jwt, "Bearer", user.getId(), user.getUsername(), user.getEmail(), user.getFirstName(), roles, employeeId);
     }
 
     @Override
