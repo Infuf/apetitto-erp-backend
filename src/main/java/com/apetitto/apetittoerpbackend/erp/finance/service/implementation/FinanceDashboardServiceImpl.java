@@ -5,6 +5,7 @@ import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.CompanyFinancia
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.ExpenseReportDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.FinancialFlatStats;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.IncomeReportDto;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.IncomeReportDto.SubCategoryIncomeDto;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceAccount;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceAccountType;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType.*;
@@ -181,6 +183,8 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
                 .collect(Collectors.groupingBy(stat -> {
                     if (stat.getCategoryName() != null) {
                         return stat.getCategoryName();
+                    } else if (stat.getOperationType() == PAYMENT_FROM_DLR) {
+                        return "Оплата от дилеров";
                     }
                     return mapIncomeTypeToLabel(stat.getOperationType());
                 }));
@@ -198,10 +202,25 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
             BigDecimal percent = catTotal.divide(totalIncome, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100"));
 
-            List<IncomeReportDto.SubCategoryIncomeDto> subDtos = subItems.stream()
-                    .filter(i -> i.getSubCategoryName() != null)
-                    .map(i -> new IncomeReportDto.SubCategoryIncomeDto(i.getSubCategoryName(), i.getAmount()))
+            List<SubCategoryIncomeDto> subDtos = subItems.stream()
+                    .map(i -> {
+                        if (i.getDealerName() != null) {
+                            return new SubCategoryIncomeDto(
+                                    i.getDealerName(),
+                                    i.getAmount()
+                            );
+                        }
+                        if (i.getSubCategoryName() != null) {
+                            return new SubCategoryIncomeDto(
+                                    i.getSubCategoryName(),
+                                    i.getAmount()
+                            );
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
                     .toList();
+
 
             categoryDtos.add(new IncomeReportDto.CategoryIncomeDto(catName, catTotal, percent, subDtos));
         }
