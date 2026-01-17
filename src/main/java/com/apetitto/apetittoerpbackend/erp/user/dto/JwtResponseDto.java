@@ -13,6 +13,7 @@ public class JwtResponseDto {
     private Long id;
     private String username;
     private String email;
+    private String name;
     private List<String> roles;
     private Long employeeId;
 }
