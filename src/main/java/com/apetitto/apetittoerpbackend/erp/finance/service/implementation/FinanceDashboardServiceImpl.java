@@ -3,6 +3,7 @@ package com.apetitto.apetittoerpbackend.erp.finance.service.implementation;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.CompanyFinancialStateDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.ExpenseReportDto;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.ExpenseReportDto.SubCategoryExpenseDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.FinancialFlatStats;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.IncomeReportDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.IncomeReportDto.SubCategoryIncomeDto;
@@ -120,6 +121,8 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
                 .collect(groupingBy(stat -> {
                     if (stat.getCategoryName() != null) {
                         return stat.getCategoryName();
+                    } else if (stat.getOperationType() == PAYMENT_TO_SUPP) {
+                        return "Оплата поставщикам";
                     }
                     return mapOperationTypeToLabel(stat.getOperationType());
                 }));
@@ -137,9 +140,29 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
             BigDecimal percent = catTotal.divide(totalExpense, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100"));
 
-            List<ExpenseReportDto.SubCategoryExpenseDto> subDtos = subItems.stream()
-                    .filter(i -> i.getSubCategoryName() != null)
-                    .map(i -> new ExpenseReportDto.SubCategoryExpenseDto(i.getSubCategoryName(), i.getAmount()))
+            Map<String, BigDecimal> mergedSubItems = subItems.stream()
+                    .map(i -> {
+                        String name = null;
+                        if (i.getSubCategoryName() != null) {
+                            name = i.getSubCategoryName();
+                        } else if (i.getToAccountName() != null)
+                            name = i.getToAccountName();
+
+                        if (name != null) {
+                            return Map.entry(name, i.getAmount());
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            BigDecimal::add
+                    ));
+
+            List<SubCategoryExpenseDto> subDtos = mergedSubItems.entrySet().stream()
+                    .map(e -> new SubCategoryExpenseDto(e.getKey(), e.getValue()))
+                    .sorted(comparing(SubCategoryExpenseDto::getAmount).reversed())
                     .toList();
 
             categoryDtos.add(new ExpenseReportDto.CategoryExpenseDto(catName, catTotal, percent, subDtos));
@@ -202,25 +225,31 @@ public class FinanceDashboardServiceImpl implements FinanceDashboardService {
             BigDecimal percent = catTotal.divide(totalIncome, 4, RoundingMode.HALF_UP)
                     .multiply(new BigDecimal("100"));
 
-            List<SubCategoryIncomeDto> subDtos = subItems.stream()
+            Map<String, BigDecimal> mergedSubItems = subItems.stream()
                     .map(i -> {
-                        if (i.getDealerName() != null) {
-                            return new SubCategoryIncomeDto(
-                                    i.getDealerName(),
-                                    i.getAmount()
-                            );
+                        String name = null;
+                        if (i.getFromAccountName() != null) {
+                            name = i.getFromAccountName();
+                        } else if (i.getSubCategoryName() != null) {
+                            name = i.getSubCategoryName();
                         }
-                        if (i.getSubCategoryName() != null) {
-                            return new SubCategoryIncomeDto(
-                                    i.getSubCategoryName(),
-                                    i.getAmount()
-                            );
+
+                        if (name != null) {
+                            return Map.entry(name, i.getAmount());
                         }
                         return null;
                     })
                     .filter(Objects::nonNull)
-                    .toList();
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            BigDecimal::add
+                    ));
 
+            List<SubCategoryIncomeDto> subDtos = mergedSubItems.entrySet().stream()
+                    .map(e -> new SubCategoryIncomeDto(e.getKey(), e.getValue()))
+                    .sorted(comparing(SubCategoryIncomeDto::getAmount).reversed())
+                    .toList();
 
             categoryDtos.add(new IncomeReportDto.CategoryIncomeDto(catName, catTotal, percent, subDtos));
         }
