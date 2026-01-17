@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class FinancialFlatStats {
     private FinanceOperationType operationType;
+    private String dealerName;
     private String categoryName;
     private String subCategoryName;
     private BigDecimal amount;

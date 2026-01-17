@@ -26,6 +26,7 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
     @Query("""
                 SELECT new com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.FinancialFlatStats(
                     t.operationType,
+                    dc.name,
                     c.name,
                     sc.name,
                     SUM(t.amount)
@@ -33,10 +34,11 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
                 FROM FinanceTransaction t
                 LEFT JOIN t.category c
                 LEFT JOIN t.subCategory sc
+                LEFT JOIN t.fromAccount dc
                 WHERE t.transactionDate BETWEEN :dateFrom AND :dateTo
                 AND t.status = 'COMPLETED'
                 AND t.operationType IN :types
-                GROUP BY t.operationType, c.name, sc.name
+                GROUP BY t.operationType, dc.name, c.name, sc.name
             """)
     List<FinancialFlatStats> getFinancialStats(
             @Param("dateFrom") Instant dateFrom,
