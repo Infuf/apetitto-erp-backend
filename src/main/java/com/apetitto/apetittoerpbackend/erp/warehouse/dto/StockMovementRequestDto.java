@@ -13,6 +13,7 @@ public class StockMovementRequestDto {
     private String comment;
     private List<Item> items;
     private Long financeAccountId;
+    private Boolean isForShipment = false;
 
     @Data
     public static class Item {

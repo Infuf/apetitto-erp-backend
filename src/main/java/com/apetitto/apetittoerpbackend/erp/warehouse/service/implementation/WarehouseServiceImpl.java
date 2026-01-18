@@ -2,10 +2,12 @@ package com.apetitto.apetittoerpbackend.erp.warehouse.service.implementation;
 
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestException;
 import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundException;
+import com.apetitto.apetittoerpbackend.erp.finance.repository.FinanceAccountRepository;
 import com.apetitto.apetittoerpbackend.erp.finance.service.FinanceTransactionService;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockItemDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto;
+import com.apetitto.apetittoerpbackend.erp.warehouse.dto.StockMovementRequestDto.Item;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.WarehouseDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.StockItemMapper;
 import com.apetitto.apetittoerpbackend.erp.warehouse.mapper.StockMovementMapper;
@@ -45,6 +47,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     private final StockMovementRepository stockMovementRepository;
     private final StockMovementMapper stockMovementMapper;
     private final FinanceTransactionService financeService;
+    private final FinanceAccountRepository financeAccountRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -146,6 +149,13 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         var movement = createMovementHeader(requestDto, warehouse);
 
+        if (Boolean.TRUE.equals(requestDto.getIsForShipment())
+                && movementType == OUTBOUND
+                && requestDto.getFinanceAccountId() != null) {
+            handleShipmentAutoInbound(requestDto, warehouse, requestDto.getFinanceAccountId());
+        }
+
+
         switch (movementType) {
             case INBOUND, TRANSFER_IN -> processInboundOrTransfer(movement, requestDto.getItems());
             case OUTBOUND, TRANSFER_OUT, SELL -> processOutboundOrTransfer(movement, requestDto.getItems());
@@ -167,7 +177,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         }
     }
 
-    private void processOutboundOrTransfer(StockMovement movement, List<StockMovementRequestDto.Item> items) {
+    private void processOutboundOrTransfer(StockMovement movement, List<Item> items) {
 
         List<StockItem> outboundItems = new ArrayList<>();
         for (var itemDto : items) {
@@ -188,7 +198,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         stockItemRepository.saveAll(outboundItems);
     }
 
-    private void processInboundOrTransfer(StockMovement movement, List<StockMovementRequestDto.Item> items) {
+    private void processInboundOrTransfer(StockMovement movement, List<Item> items) {
         List<StockItem> inboundItems = new ArrayList<>();
 
         for (var itemDto : items) {
@@ -209,7 +219,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         stockItemRepository.saveAll(inboundItems);
     }
 
-    private void processAdjustment(StockMovement movement, List<StockMovementRequestDto.Item> items) {
+    private void processAdjustment(StockMovement movement, List<Item> items) {
         List<StockItem> adjustmentItems = new ArrayList<>();
         for (var itemDto : items) {
             Product product = productService.findProductEntityById(itemDto.getProductId());
@@ -278,4 +288,42 @@ public class WarehouseServiceImpl implements WarehouseService {
             stockItem.setAverageCost(newAverageCost);
         }
     }
+
+    private void handleShipmentAutoInbound(
+            StockMovementRequestDto requestDto,
+            Warehouse warehouse,
+            Long financeAccountId
+    ) {
+
+        var financeAccount = financeAccountRepository.findById(financeAccountId).orElseThrow(() ->
+                new InvalidRequestException("FinanceAccount account not found bro")
+        );
+
+        var autoInboundMovement = new StockMovement();
+        autoInboundMovement.setWarehouse(warehouse);
+        autoInboundMovement.setMovementType(INBOUND);
+        autoInboundMovement.setComment(
+                "Автооприходование ГП при отгрузке дилеру -> "
+                        + financeAccount.getName()
+                        + ": "
+                        + requestDto.getComment()
+        );
+        autoInboundMovement.setItems(new ArrayList<>());
+
+        var inboundItems = requestDto.getItems().stream()
+                .map(this::cloneItemWithZeroCost)
+                .toList();
+
+        processInboundOrTransfer(autoInboundMovement, inboundItems);
+        stockMovementRepository.save(autoInboundMovement);
+    }
+
+    private Item cloneItemWithZeroCost(Item item) {
+        var clonedItem = new Item();
+        clonedItem.setProductId(item.getProductId());
+        clonedItem.setQuantity(item.getQuantity());
+        clonedItem.setCostPrice(BigDecimal.ZERO);
+        return clonedItem;
+    }
+
 }
