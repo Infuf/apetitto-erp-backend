@@ -3,7 +3,9 @@ package com.apetitto.apetittoerpbackend.erp.finance.controller.api;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.CompanyFinancialStateDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.ExpenseReportDto;
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.IncomeReportDto;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.PartnersAnalysisReportDto;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,5 +41,16 @@ public interface FinanceDashboardApi {
     ResponseEntity<IncomeReportDto> getIncomeReport(
             @RequestParam Instant dateFrom,
             @RequestParam Instant dateTo);
+
+    @Operation(summary = "Анализ партнеров (Дилеры / Поставщики)",
+            description = "Показывает оборот и детализацию по товарам для каждого партнера.")
+    @GetMapping("/partners/analysis")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'FINANCE_OFFICER')")
+    ResponseEntity<PartnersAnalysisReportDto> getPartnerAnalysis(
+            @Parameter(description = "Начало периода (UTC)") @RequestParam Instant dateFrom,
+            @Parameter(description = "Конец периода (UTC)") @RequestParam Instant dateTo,
+            @Parameter(description = "Тип отчета: true = Поставщики (Закупки), false = Дилеры (Продажи)")
+            @RequestParam boolean isSupplier
+    );
 
 }

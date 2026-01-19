@@ -1,6 +1,7 @@
 package com.apetitto.apetittoerpbackend.erp.finance.repository;
 
 import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.FinancialFlatStats;
+import com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.PartnerProductFlatDto;
 import com.apetitto.apetittoerpbackend.erp.finance.model.FinanceTransaction;
 import com.apetitto.apetittoerpbackend.erp.finance.model.enums.FinanceOperationType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,4 +59,43 @@ public interface FinanceTransactionRepository extends JpaRepository<FinanceTrans
             @Param("from") Instant from,
             @Param("to") Instant to
     );
+
+    @Query("""
+        SELECT new com.apetitto.apetittoerpbackend.erp.finance.dto.dashboard.PartnerProductFlatDto(
+            CASE\s
+                WHEN t.operationType = 'DEALER_INVOICE' THEN toAcc.id\s
+                ELSE fromAcc.id\s
+            END,
+            CASE\s
+                WHEN t.operationType = 'DEALER_INVOICE' THEN toAcc.name\s
+                ELSE fromAcc.name\s
+            END,
+           \s
+            p.name,
+            CAST(p.unit AS string),
+           \s
+            SUM(i.quantity),
+            SUM(i.totalAmount)
+        )
+        FROM FinanceTransaction t
+        JOIN t.items i
+        JOIN i.product p
+        LEFT JOIN t.fromAccount fromAcc
+        LEFT JOIN t.toAccount toAcc
+        WHERE t.transactionDate BETWEEN :dateFrom AND :dateTo
+          AND t.status = 'COMPLETED'
+          AND t.operationType = :type
+        GROUP BY\s
+            CASE WHEN t.operationType = 'DEALER_INVOICE' THEN toAcc.id ELSE fromAcc.id END,
+            CASE WHEN t.operationType = 'DEALER_INVOICE' THEN toAcc.name ELSE fromAcc.name END,
+            p.name,
+            p.unit
+        ORDER BY SUM(i.totalAmount) DESC
+   \s""")
+    List<PartnerProductFlatDto> getPartnerStats(
+            @Param("dateFrom") Instant dateFrom,
+            @Param("dateTo") Instant dateTo,
+            @Param("type") FinanceOperationType type
+    );
+
 }
