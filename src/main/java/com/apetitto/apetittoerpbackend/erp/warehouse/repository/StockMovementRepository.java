@@ -28,7 +28,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
                 JOIN FETCH sm.items i
                 JOIN FETCH i.product p
                 JOIN FETCH sm.warehouse w
-                WHERE sm.movementType = 'TRANSFER_IN'
+                WHERE (sm.movementType = 'TRANSFER_IN' OR sm.movementType = 'TRANSFER_OUT')
                 AND (:warehouseIds IS NULL OR w.id IN :warehouseIds)
                 AND sm.movementTime BETWEEN :dateFrom AND :dateTo
             """)

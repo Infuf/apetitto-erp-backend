@@ -21,6 +21,6 @@ public interface TransferOrderMapper {
 
     @Mapping(source = "product.id", target = "productId")
     @Mapping(source = "product.name", target = "productName")
-    @Mapping(source = "product.sellingPrice", target = "sellingPrice")
+    @Mapping(source = "sellingPriceSnapshot", target = "sellingPrice")
     TransferOrderDto.Item toDtoItem(com.apetitto.apetittoerpbackend.erp.warehouse.model.TransferOrderItem item);
 }
