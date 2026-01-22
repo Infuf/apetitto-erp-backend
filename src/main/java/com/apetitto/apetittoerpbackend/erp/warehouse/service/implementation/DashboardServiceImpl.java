@@ -4,7 +4,6 @@ import com.apetitto.apetittoerpbackend.erp.commons.exeption.InvalidRequestExcept
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.dashboard.DashboardStockItemDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.dto.dashboard.IncomingStockReportDto;
 import com.apetitto.apetittoerpbackend.erp.warehouse.model.StockItem;
-import com.apetitto.apetittoerpbackend.erp.warehouse.model.StockMovementItem;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockItemRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.repository.StockMovementRepository;
 import com.apetitto.apetittoerpbackend.erp.warehouse.service.DashboardService;
@@ -17,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.apetitto.apetittoerpbackend.erp.warehouse.model.enums.MovementType.TRANSFER_OUT;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.groupingBy;
 
@@ -78,13 +78,17 @@ public class DashboardServiceImpl implements DashboardService {
         if (dateFrom == null || dateTo == null) {
             throw new InvalidRequestException("Dates are required");
         }
-        var ids = (warehouseIds != null && !warehouseIds.isEmpty()) ? warehouseIds : null;
 
-        var movements = stockMovementRepository.findIncomingMovements(ids, dateFrom, dateTo);
+        if (warehouseIds == null || warehouseIds.isEmpty()) {
+            throw new InvalidRequestException("Warehouse IS REQUIRED  PUMPKIN!");
+        }
+
+        var movements = stockMovementRepository.findIncomingMovements(warehouseIds, dateFrom, dateTo);
 
         var allItems = movements.stream()
                 .flatMap(m -> m.getItems().stream())
                 .toList();
+
         var groupedDate = allItems.stream()
                 .collect(groupingBy(
                         item -> item.getMovement().getWarehouse().getName(),
@@ -103,7 +107,20 @@ public class DashboardServiceImpl implements DashboardService {
                 var items = productEntry.getValue();
 
                 var product = items.get(0).getProduct();
-                var totalQuantity = items.stream().map(StockMovementItem::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+                var totalQuantity = items.stream().map(item ->
+                {
+                    var movementType = item.getMovement().getMovementType();
+                    var quantity = item.getQuantity();
+                    if (TRANSFER_OUT.equals(movementType)) {
+                        return quantity.negate();
+                    }
+                    return quantity;
+                }).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                if (totalQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+
                 var pricePerUnit = product.getSellingPrice() != null ? product.getSellingPrice() : BigDecimal.ZERO;
 
                 var totalAmount = totalQuantity.multiply(pricePerUnit);
@@ -116,7 +133,7 @@ public class DashboardServiceImpl implements DashboardService {
                 ));
             }
         }
-        report.sort(comparing(IncomingStockReportDto::getTotalAmount));
+        report.sort(comparing(IncomingStockReportDto::getTotalAmount).reversed());
         return report;
     }
 

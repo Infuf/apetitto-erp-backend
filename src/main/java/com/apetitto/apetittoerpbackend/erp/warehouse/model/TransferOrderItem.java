@@ -23,6 +23,8 @@ public class TransferOrderItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    private BigDecimal sellingPriceSnapshot;
+
     @Column(nullable = false, precision = 20, scale = 4)
     private BigDecimal quantity;
 

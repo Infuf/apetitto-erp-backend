@@ -90,6 +90,7 @@ public class TransferServiceImpl implements TransferService {
             orderItem.setProduct(product);
             orderItem.setQuantity(itemDto.getQuantity());
             orderItem.setTransferOrder(transferOrder);
+            orderItem.setSellingPriceSnapshot(product.getSellingPrice());
             orderItem.setCostAtTransfer(ZERO);
             transferOrder.getItems().add(orderItem);
         }
