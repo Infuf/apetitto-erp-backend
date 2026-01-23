@@ -20,10 +20,4 @@ public class AttendanceController implements AttendanceApi {
         attendanceService.updateAttendance(dto);
         return ResponseEntity.ok().build();
     }
-    @PostMapping("/admin/recalculate-all")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> recalculateAll() {
-        attendanceService.recalculateAllHistory();
-        return ResponseEntity.ok().build();
-    }
 }

@@ -7,5 +7,4 @@ public interface AttendanceService {
 
     void updateAttendanceSystem(AttendanceUpdateDto dto);
 
-    void recalculateAllHistory();
 }

@@ -85,19 +85,6 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendanceRepository.save(record);
     }
 
-    @Override
-    @Transactional
-    public void recalculateAllHistory() {
-
-        var allRecords = attendanceRepository.findAll();
-        log.info("Starting recalculation for {} records...", allRecords);
-        for (var record : allRecords) {
-            recalculateMetrics(record, record.getEmployee());
-        }
-        attendanceRepository.saveAll(allRecords);
-        log.info("Recalculation completed.");
-
-    }
     private void recalculateMetrics(AttendanceRecord record, Employee employee) {
         record.setDurationMinutes(0);
         record.setLateMinutes(0);
