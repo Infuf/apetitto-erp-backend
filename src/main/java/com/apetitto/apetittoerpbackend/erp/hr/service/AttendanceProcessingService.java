@@ -37,8 +37,8 @@ public class AttendanceProcessingService {
 
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Tashkent");
 
-    public void processLogs(List<Long> logIds) {
-        List<HrDeviceLog> logs = deviceLogRepository.findAllById(logIds);
+    public void processLogs() {
+        List<HrDeviceLog> logs = deviceLogRepository.findByIsProcessedFalse();
 
         for (HrDeviceLog logItem : logs) {
             try {
