@@ -6,4 +6,6 @@ public interface AttendanceService {
     void updateAttendance(AttendanceUpdateDto dto);
 
     void updateAttendanceSystem(AttendanceUpdateDto dto);
+
+    void recalculateAllHistory();
 }

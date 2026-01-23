@@ -13,3 +13,9 @@ SET selling_price_snapshot = p.selling_price
 FROM product p
 WHERE toi.product_id = p.id;
 CREATE INDEX idx_stock_movement_time ON stock_movement (movement_time);
+
+--changeset asilbek:47
+ALTER TABLE attendance_records
+    ADD COLUMN total_less_minutes INT DEFAULT 0,
+    ADD COLUMN early_come_minutes INT DEFAULT 0,
+    ADD COLUMN late_out_minutes   INT DEFAULT 0;

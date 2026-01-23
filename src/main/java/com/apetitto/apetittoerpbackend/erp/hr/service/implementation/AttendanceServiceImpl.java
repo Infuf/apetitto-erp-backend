@@ -6,24 +6,29 @@ import com.apetitto.apetittoerpbackend.erp.commons.exeption.ResourceNotFoundExce
 import com.apetitto.apetittoerpbackend.erp.hr.dto.AttendanceUpdateDto;
 import com.apetitto.apetittoerpbackend.erp.hr.model.AttendanceRecord;
 import com.apetitto.apetittoerpbackend.erp.hr.model.Employee;
-import com.apetitto.apetittoerpbackend.erp.hr.model.enums.AttendanceStatus;
 import com.apetitto.apetittoerpbackend.erp.hr.repository.AttendanceRepository;
 import com.apetitto.apetittoerpbackend.erp.hr.repository.EmployeeRepository;
 import com.apetitto.apetittoerpbackend.erp.hr.service.AttendanceService;
 import com.apetitto.apetittoerpbackend.erp.user.model.User;
 import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static com.apetitto.apetittoerpbackend.erp.hr.model.enums.AttendanceStatus.ABSENT;
 import static com.apetitto.apetittoerpbackend.erp.hr.model.enums.AttendanceStatus.PRESENT;
+import static java.time.LocalDateTime.ofInstant;
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
@@ -35,107 +40,147 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Override
     @Transactional
     public void updateAttendance(AttendanceUpdateDto dto) {
-        Employee targetEmployee = employeeRepository.findById(dto.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + dto.getEmployeeId()));
-
+        Employee targetEmployee = findEmployee(dto.getEmployeeId());
         validateUserAccess(targetEmployee);
-
-        validateDate(dto.getDate());
-
-        // TODO: Проверка на закрытый период (Финансы).
-        // Если зарплата за этот месяц (или этот день) уже начислена (есть транзакция SALARY_ACCRUAL или статус PAID),
-        // то редактирование должно быть запрещено.
-        // Пример: if (payrollService.isPeriodClosed(targetEmployee.getId(), dto.getDate())) throw ...
-
-        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(targetEmployee.getId(), dto.getDate())
-                .orElse(new AttendanceRecord());
-
-        if (record.getId() == null) {
-            record.setEmployee(targetEmployee);
-            record.setDate(dto.getDate());
-            record.setStatus(AttendanceStatus.PRESENT);
-        }
-
-        if (dto.getCheckIn() != null) {
-            Instant checkInInstant = dto.getCheckIn().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
-            record.setCheckIn(checkInInstant);
-            record.setStatus(PRESENT);
-        }
-
-        if (dto.getCheckOut() != null) {
-            Instant checkOutInstant = dto.getCheckOut().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
-            record.setCheckOut(checkOutInstant);
-            record.setStatus(PRESENT);
-        }
-
-        if (dto.getCheckIn() == null && null == dto.getCheckOut()) {
-            record.setCheckIn(null);
-            record.setCheckOut(null);
-            record.setStatus(ABSENT);
-        }
-
-        recalculateMetrics(record, targetEmployee);
-
-        attendanceRepository.save(record);
+        processAttendanceUpdate(targetEmployee, dto);
     }
 
     @Override
     @Transactional
     public void updateAttendanceSystem(AttendanceUpdateDto dto) {
-        Employee targetEmployee = employeeRepository.findById(dto.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + dto.getEmployeeId()));
+        Employee targetEmployee = findEmployee(dto.getEmployeeId());
+        processAttendanceUpdate(targetEmployee, dto);
+    }
 
+    private void processAttendanceUpdate(Employee employee, AttendanceUpdateDto dto) {
         validateDate(dto.getDate());
 
-        // TODO: Проверка на закрытый период (Финансы).
-        // Если зарплата за этот месяц (или этот день) уже начислена (есть транзакция SALARY_ACCRUAL или статус PAID),
-        // то редактирование должно быть запрещено.
-        // Пример: if (payrollService.isPeriodClosed(targetEmployee.getId(), dto.getDate())) throw ...
-
-        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(targetEmployee.getId(), dto.getDate())
+        AttendanceRecord record = attendanceRepository.findByEmployeeIdAndDate(employee.getId(), dto.getDate())
                 .orElse(new AttendanceRecord());
 
         if (record.getId() == null) {
-            record.setEmployee(targetEmployee);
+            record.setEmployee(employee);
             record.setDate(dto.getDate());
-            record.setStatus(AttendanceStatus.PRESENT);
+            record.setStatus(PRESENT);
         }
 
+
         if (dto.getCheckIn() != null) {
-            Instant checkInInstant = dto.getCheckIn().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
-            record.setCheckIn(checkInInstant);
+            record.setCheckIn(dto.getCheckIn().atDate(dto.getDate()).atZone(ZONE_ID).toInstant());
             record.setStatus(PRESENT);
         }
 
         if (dto.getCheckOut() != null) {
-            Instant checkOutInstant = dto.getCheckOut().atDate(dto.getDate()).atZone(ZONE_ID).toInstant();
-            record.setCheckOut(checkOutInstant);
+            record.setCheckOut(dto.getCheckOut().atDate(dto.getDate()).atZone(ZONE_ID).toInstant());
             record.setStatus(PRESENT);
         }
 
-        if (dto.getCheckIn() == null && null == dto.getCheckOut()) {
+        if (dto.getCheckIn() == null && dto.getCheckOut() == null) {
             record.setCheckIn(null);
             record.setCheckOut(null);
             record.setStatus(ABSENT);
         }
 
-        recalculateMetrics(record, targetEmployee);
-
+        recalculateMetrics(record, employee);
         attendanceRepository.save(record);
+    }
+
+    @Override
+    @Transactional
+    public void recalculateAllHistory() {
+
+        var allRecords = attendanceRepository.findAll();
+        log.info("Starting recalculation for {} records...", allRecords);
+        for (var record : allRecords) {
+            recalculateMetrics(record, record.getEmployee());
+        }
+        attendanceRepository.saveAll(allRecords);
+        log.info("Recalculation completed.");
+
+    }
+    private void recalculateMetrics(AttendanceRecord record, Employee employee) {
+        record.setDurationMinutes(0);
+        record.setLateMinutes(0);
+        record.setEarlyLeaveMinutes(0);
+        record.setOvertimeMinutes(0);
+        record.setEarlyComeMinutes(0);
+        record.setLateOutMinutes(0);
+
+        if (record.getCheckIn() == null && record.getCheckOut() == null) {
+            return;
+        }
+
+        var actualIn = record.getCheckIn() != null ? ofInstant(record.getCheckIn(), ZONE_ID) : null;
+        var actualOut = record.getCheckOut() != null ? ofInstant(record.getCheckOut(), ZONE_ID) : null;
+
+        if (actualIn != null && actualOut != null && actualOut.isBefore(actualIn)) {
+            actualOut = actualOut.plusDays(1);
+        }
+
+        var shiftStart = employee.getShiftStartTime();
+        var shiftEnd = employee.getShiftEndTime();
+
+        if (shiftStart == null || shiftEnd == null) {
+            if (actualIn != null && actualOut != null) {
+                long duration = MINUTES.between(actualIn, actualOut);
+                record.setDurationMinutes((int) duration);
+            }
+            return;
+        }
+
+        var recordDate = record.getDate();
+        var planIn = LocalDateTime.of(recordDate, shiftStart);
+        var planOut = LocalDateTime.of(recordDate, shiftEnd);
+
+        if (planOut.isBefore(planIn)) {
+            planOut = planOut.plusDays(1);
+        }
+
+        if (actualIn != null) {
+
+            if (actualIn.isBefore(planIn)) {
+                record.setEarlyComeMinutes((int) MINUTES.between(actualIn, planIn));
+            }
+
+            if (actualIn.isAfter(planIn)) {
+                record.setLateMinutes((int) MINUTES.between(planIn, actualIn));
+            }
+        }
+
+        if (actualOut != null) {
+
+            if (actualOut.isBefore(planOut)) {
+                record.setEarlyLeaveMinutes((int) MINUTES.between(actualOut, planOut));
+            }
+
+            if (actualOut.isAfter(planOut)) {
+                record.setLateOutMinutes((int) MINUTES.between(planOut, actualOut));
+            }
+        }
+
+        if (actualIn != null && actualOut != null) {
+            long duration = MINUTES.between(actualIn, actualOut);
+            record.setDurationMinutes((int) Math.max(0, duration));
+        }
+
+        record.setOvertimeMinutes(record.getEarlyComeMinutes() + record.getLateOutMinutes());
+        record.setTotalLessMinutes(record.getEarlyLeaveMinutes() + record.getLateMinutes());
+    }
+
+    private Employee findEmployee(Long id) {
+        return employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
     }
 
     private void validateUserAccess(Employee targetEmployee) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
 
         boolean isGlobalAdmin = currentUser.getRoles().stream()
                 .anyMatch(r -> r.getName().equals("ROLE_ADMIN") || r.getName().equals("ROLE_HR"));
 
-        if (isGlobalAdmin) {
-            return;
-        }
+        if (isGlobalAdmin) return;
 
         if (targetEmployee.getDepartment() == null) {
             throw new AccessDeniedException("The employee does not have a department, editing is restricted.");
@@ -144,95 +189,13 @@ public class AttendanceServiceImpl implements AttendanceService {
         User departmentManager = targetEmployee.getDepartment().getManager();
         if (departmentManager == null || !departmentManager.getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You are not the manager of the "
-                    + targetEmployee.getDepartment().getName() + " department. Access denied.");
+                    + targetEmployee.getDepartment().getName() + " department.");
         }
     }
 
     private void validateDate(LocalDate date) {
-        LocalDate today = LocalDate.now(ZONE_ID);
-        if (date.isAfter(today)) {
-            throw new InvalidRequestException("You cannot make marks for future dates.(" + date + ").");
+        if (date.isAfter(LocalDate.now(ZONE_ID))) {
+            throw new InvalidRequestException("Cannot set attendance in the future.");
         }
-    }
-
-    private void recalculateMetrics(AttendanceRecord record, Employee employee) {
-        record.setLateMinutes(0);
-        record.setEarlyLeaveMinutes(0);
-        record.setOvertimeMinutes(0);
-        record.setDurationMinutes(0);
-
-        if (record.getCheckIn() == null || record.getCheckOut() == null) {
-            return;
-        }
-
-        LocalTime actualCheckIn =
-                record.getCheckIn().atZone(ZONE_ID).toLocalTime();
-        LocalTime actualCheckOut =
-                record.getCheckOut().atZone(ZONE_ID).toLocalTime();
-
-        LocalTime shiftStart = employee.getShiftStartTime();
-        LocalTime shiftEnd = employee.getShiftEndTime();
-
-        if (shiftStart == null || shiftEnd == null) {
-            return;
-        }
-
-        boolean nightShift = shiftEnd.isBefore(shiftStart);
-
-
-        long durationMinutes;
-        if (!nightShift) {
-            durationMinutes = Duration.between(actualCheckIn, actualCheckOut).toMinutes();
-        } else {
-            durationMinutes = Duration.between(
-                    actualCheckIn,
-                    actualCheckOut.isAfter(actualCheckIn)
-                            ? actualCheckOut
-                            : actualCheckOut.plusHours(24)
-            ).toMinutes();
-        }
-
-        record.setDurationMinutes((int) Math.max(durationMinutes, 0));
-
-        if (!nightShift) {
-            if (actualCheckIn.isAfter(shiftStart)) {
-                record.setLateMinutes(
-                        (int) Duration.between(shiftStart, actualCheckIn).toMinutes()
-                );
-            }
-        } else {
-            if (actualCheckIn.isAfter(shiftStart)) {
-                record.setLateMinutes(
-                        (int) Duration.between(shiftStart, actualCheckIn).toMinutes()
-                );
-            }
-        }
-
-        if (!nightShift) {
-            if (actualCheckOut.isBefore(shiftEnd)) {
-                record.setEarlyLeaveMinutes(
-                        (int) Duration.between(actualCheckOut, shiftEnd).toMinutes()
-                );
-            }
-        } else {
-            // ночная смена
-            if (actualCheckOut.isBefore(shiftEnd)) {
-                record.setEarlyLeaveMinutes(
-                        (int) Duration.between(actualCheckOut, shiftEnd).toMinutes()
-                );
-            }
-        }
-
-        long overtime = 0;
-
-        if (actualCheckIn.isBefore(shiftStart)) {
-            overtime += Duration.between(actualCheckIn, shiftStart).toMinutes();
-        }
-
-        if (actualCheckOut.isAfter(shiftEnd)) {
-            overtime += Duration.between(shiftEnd, actualCheckOut).toMinutes();
-        }
-
-        record.setOvertimeMinutes((int) Math.max(overtime, 0));
     }
 }

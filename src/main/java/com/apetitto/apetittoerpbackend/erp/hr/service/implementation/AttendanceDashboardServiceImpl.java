@@ -33,6 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 
+import static java.lang.Math.max;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 
@@ -87,8 +88,8 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
 
                 if (record != null) {
                     totalWorkedHours += record.getDurationMinutes();
-                    totalShortcoming += (record.getLateMinutes() + record.getEarlyLeaveMinutes());
-                    totalOvertime += record.getOvertimeMinutes();
+                    totalShortcoming += (record.getTotalLessMinutes());
+                    totalOvertime += (record.getOvertimeMinutes() - record.getEarlyComeMinutes());
                 }
 
                 daysDtoMap.put(date.toString(), dayDto);
@@ -142,7 +143,7 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
             if (record != null) {
                 totalLate += record.getLateMinutes();
                 totalEarly += record.getEarlyLeaveMinutes();
-                totalOver += record.getOvertimeMinutes();
+                totalOver += (record.getOvertimeMinutes() - record.getEarlyComeMinutes());
                 totalWorked += record.getDurationMinutes();
             }
             days.add(dayDto);
@@ -222,8 +223,10 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
         if (record != null) {
             cell.setRecordId(record.getId());
             cell.setStatus(record.getStatus().name());
-            cell.setShortcomingMinutes(record.getLateMinutes() + record.getEarlyLeaveMinutes());
-            cell.setOvertimeMinutes(record.getOvertimeMinutes());
+            cell.setShortcomingMinutes(record.getTotalLessMinutes());
+
+            var calculateOvertimeMinutes = record.getOvertimeMinutes() - record.getEarlyComeMinutes();
+            cell.setOvertimeMinutes(max(0, calculateOvertimeMinutes));
 
             if (record.getCheckIn() != null)
                 cell.setCheckIn(record.getCheckIn().atZone(ZONE_ID).format(TIME_FMT));
@@ -250,9 +253,12 @@ public class AttendanceDashboardServiceImpl implements AttendanceDashboardServic
 
             dto.setLateMinutes(record.getLateMinutes());
             dto.setEarlyLeaveMinutes(record.getEarlyLeaveMinutes());
-            dto.setOvertimeMinutes(record.getOvertimeMinutes());
+
+            var calculateOvertimeMinutes = record.getOvertimeMinutes() - record.getEarlyComeMinutes();
+            dto.setOvertimeMinutes(max(0, calculateOvertimeMinutes));
+
             dto.setWorkingMinutes(record.getDurationMinutes());
-            dto.setShortcomingMinutes(record.getLateMinutes() + record.getEarlyLeaveMinutes());
+            dto.setShortcomingMinutes(record.getTotalLessMinutes());
         } else {
             dto.setStatus(date.isAfter(LocalDate.now(ZONE_ID)) ? "FUTURE" : "ABSENT");
         }
