@@ -12,6 +12,7 @@ import com.apetitto.apetittoerpbackend.erp.hr.service.AttendanceService;
 import com.apetitto.apetittoerpbackend.erp.user.model.User;
 import com.apetitto.apetittoerpbackend.erp.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
@@ -83,6 +85,19 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendanceRepository.save(record);
     }
 
+    @Override
+    @Transactional
+    public void recalculateAllHistory() {
+
+        var allRecords = attendanceRepository.findAll();
+        log.info("Starting recalculation for {} records...", allRecords);
+        for (var record : allRecords) {
+            recalculateMetrics(record, record.getEmployee());
+        }
+        attendanceRepository.saveAll(allRecords);
+        log.info("Recalculation completed.");
+
+    }
     private void recalculateMetrics(AttendanceRecord record, Employee employee) {
         record.setDurationMinutes(0);
         record.setLateMinutes(0);
@@ -149,6 +164,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
 
         record.setOvertimeMinutes(record.getEarlyComeMinutes() + record.getLateOutMinutes());
+        record.setTotalLessMinutes(record.getEarlyLeaveMinutes() + record.getLateMinutes());
     }
 
     private Employee findEmployee(Long id) {
