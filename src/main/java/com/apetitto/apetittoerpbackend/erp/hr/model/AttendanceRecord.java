@@ -35,6 +35,10 @@ public class AttendanceRecord {
 
     private Integer lateMinutes = 0;
     private Integer earlyLeaveMinutes = 0;
+    private Integer totalLessMinutes = 0;
+
+    private Integer earlyComeMinutes = 0;
+    private Integer lateOutMinutes = 0;
     private Integer overtimeMinutes = 0;
 
     @CreationTimestamp
