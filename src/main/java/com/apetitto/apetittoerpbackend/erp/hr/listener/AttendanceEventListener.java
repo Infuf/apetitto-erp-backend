@@ -19,6 +19,6 @@ public class AttendanceEventListener {
     @EventListener
     public void handleNewLogs(NewAttendanceLogEvent event) {
         log.debug("Processing {} new logs in background", event.getLogIds().size());
-        processingService.processLogs(event.getLogIds());
+        processingService.processLogs();
     }
 }
