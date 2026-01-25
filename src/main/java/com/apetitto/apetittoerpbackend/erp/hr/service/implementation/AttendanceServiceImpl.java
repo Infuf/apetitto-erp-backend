@@ -90,6 +90,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         record.setLateMinutes(0);
         record.setEarlyLeaveMinutes(0);
         record.setOvertimeMinutes(0);
+        record.setTotalLessMinutes(0);
         record.setEarlyComeMinutes(0);
         record.setLateOutMinutes(0);
 
