@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
         name = "Продажи POS",
         description = "Операции обработки продаж, поступающих из кассовой системы (POS)"
 )
-@RequestMapping("/api/pos")
+@RequestMapping("/api/v1/pos")
 public interface PosApi {
 
     @Operation(
