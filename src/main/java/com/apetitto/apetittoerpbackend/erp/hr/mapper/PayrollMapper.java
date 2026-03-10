@@ -36,7 +36,7 @@ public interface PayrollMapper {
 
     default String getEmployeeName(PayrollAccrual entity) {
         return entity.getEmployee() != null
-                ? entity.getEmployee().getUser().getFirstName()
+                ? entity.getEmployee().getUser().getFirstName() + " " + entity.getEmployee().getUser().getLastName()
                 : null;
     }
 
